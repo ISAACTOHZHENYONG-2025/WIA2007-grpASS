@@ -1,0 +1,46 @@
+# Android / Gradle
+*.iml
+.gradle/
+local.properties
+.idea/
+.DS_Store
+build/
+/captures/
+.externalNativeBuild/
+.cxx/
+.kotlin/
+*.apk
+*.aab
+
+# Signing
+*.jks
+*.keystore
+
+# SECRETS: never commit these. Use GitHub's hidden "secrets" settings instead.
+.env
+.env.*
+*.pem
+service-account*.json
+*-firebase-adminsdk-*.json
+secrets.properties
+api-keys.*
+
+# Node packages (for the GitHub robot job)
+node_modules/
+
+# Firebase local emulator
+firebase-debug.log
+firebase-debug.*.log
+.firebase/
+ui-debug.log
+emulator-data/
+
+# Survey raw answers and personal data
+survey-raw/
+*.survey.csv
+
+# Test photos and video live in Google Drive, not GitHub (photos can show faces)
+test-photos/
+ai-tests/photos/
+*.mp4
+*.mov
