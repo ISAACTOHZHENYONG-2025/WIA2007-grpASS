@@ -1,3 +1,4 @@
+ HEAD
 # Android / Gradle
 *.iml
 .gradle/
@@ -44,3 +45,20 @@ test-photos/
 ai-tests/photos/
 *.mp4
 *.mov
+=======
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+f2f1b0b (feat: initialize project skeleton and integrate Firebase)
