@@ -32,6 +32,16 @@ What it does:
 Try it once on Wi-Fi and once on mobile data if you can. UM Wi-Fi and mobile data behave
 differently.
 
+## If the map is blank or the app crashes on the phone
+
+MapLibre 13 draws with **Vulkan** by default (the emulator log shows a Vulkan device). Older and
+cheaper phones often have weak Vulkan drivers. MapLibre also publishes an OpenGL build, so try that
+before deciding OpenFreeMap does not work:
+
+1. In `gradle/libs.versions.toml`, change `name = "android-sdk"` to `name = "android-sdk-opengl"`
+   on the `maplibre-android` line.
+2. Sync Gradle, run again, and write down both results (Vulkan and OpenGL) in the note.
+
 ## Changing the zones
 
 Draw your own at geojson.io, export as GeoJSON, and replace `zones.geojson`. Give every shape
