@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "380977326520",
+    "project_id": "rainready-app",
+    "storage_bucket": "rainready-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:380977326520:android:2f749fe1afc7a2ebf8474d",
+        "android_client_info": {
+          "package_name": "my.edu.um.rainready"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCBCMduECtrcTM-kRKEXOreOmeOASarHSo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
