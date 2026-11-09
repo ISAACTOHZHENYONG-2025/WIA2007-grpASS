@@ -36,3 +36,6 @@ Mandatory for this assignment (UM AI policy, Level 2: limited use). This log is 
 - Where did AI help most?
 - Where was it wrong, and how did we find out?
 - What did we deliberately keep as our own work, and why?
+
+
+| 1 | 2026-11-09 | Ker Li | Claude | "Write the plan for usability round 1 (3 students, Figma screens)" and "first 4 route-check test cases, and robot test push files" | Used the drafts as a starting point for my usability plan, test cases and the test-push workflow/script | Read it through, adjusted to our Figma draft and team rules, and will test the workflow myself before merging |
