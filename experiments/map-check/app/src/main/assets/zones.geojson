@@ -1,0 +1,25 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "FSKTM", "status": "clear" },
+      "geometry": { "type": "Polygon", "coordinates": [[[101.6488, 3.1262], [101.6521, 3.1259], [101.6524, 3.1296], [101.6493, 3.1300], [101.6486, 3.1281], [101.6488, 3.1262]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Science", "status": "clear" },
+      "geometry": { "type": "Polygon", "coordinates": [[[101.6526, 3.1216], [101.6551, 3.1214], [101.6554, 3.1249], [101.6530, 3.1252], [101.6524, 3.1235], [101.6526, 3.1216]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Main Library and Perdanasiswa", "status": "caution" },
+      "geometry": { "type": "Polygon", "coordinates": [[[101.6530, 3.1196], [101.6563, 3.1195], [101.6567, 3.1213], [101.6533, 3.1215], [101.6530, 3.1196]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Engineering", "status": "flooded" },
+      "geometry": { "type": "Polygon", "coordinates": [[[101.6537, 3.1164], [101.6566, 3.1162], [101.6571, 3.1188], [101.6540, 3.1191], [101.6535, 3.1178], [101.6537, 3.1164]]] }
+    }
+  ]
+}
