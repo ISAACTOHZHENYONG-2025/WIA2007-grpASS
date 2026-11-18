@@ -6,6 +6,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import my.edu.um.rainready.R
 
 @Composable
 fun NoticesScreen() {
@@ -13,6 +15,6 @@ fun NoticesScreen() {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Text(text = "Home Screen")
+        Text(text = stringResource(R.string.tab_notices))
     }
 }
