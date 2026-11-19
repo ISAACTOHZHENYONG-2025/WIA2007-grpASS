@@ -1,8 +1,26 @@
 name: test-push
 
-# Manual "Run workflow" button on the GitHub Actions tab
+# Manual "Run workflow" button on the GitHub Actions tab.
+# You can change the topic / title / body for synthetic test conditions.
 on:
   workflow_dispatch:
+    inputs:
+      topic:
+        description: "FCM topic to send to (used when device_token is empty)"
+        required: false
+        default: "test"
+      title:
+        description: "Notification title"
+        required: false
+        default: "RainReady test"
+      body:
+        description: "Notification body"
+        required: false
+        default: "If you see this, the robot works"
+      device_token:
+        description: "Leave EMPTY normally. For the failure test type a FAKE value like invalid-token-test. Never paste a real token (inputs are visible on the run page)."
+        required: false
+        default: ""
 
 jobs:
   send:
@@ -23,3 +41,7 @@ jobs:
         run: node robot/send-test-push.js
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          TOPIC: ${{ inputs.topic }}
+          TITLE: ${{ inputs.title }}
+          BODY: ${{ inputs.body }}
+          DEVICE_TOKEN: ${{ inputs.device_token }}
