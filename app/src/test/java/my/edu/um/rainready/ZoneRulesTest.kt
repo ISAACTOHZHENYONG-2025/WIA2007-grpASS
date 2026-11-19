@@ -6,8 +6,10 @@ import my.edu.um.rainready.model.ZoneStatus
 import my.edu.um.rainready.model.ZoneSummary
 import my.edu.um.rainready.model.isStale
 import my.edu.um.rainready.model.worstStatus
+import my.edu.um.rainready.model.zoneStatusOf
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -25,6 +27,16 @@ class ZoneRulesTest {
     @Test
     fun worstStatus_noZonesIsClear() {
         assertEquals(ZoneStatus.CLEAR, emptyList<ZoneSummary>().worstStatus())
+    }
+
+    @Test
+    fun zoneStatusOf_readsTheDataColours() {
+        assertEquals(ZoneStatus.CLEAR, zoneStatusOf("green"))
+        assertEquals(ZoneStatus.CAUTION, zoneStatusOf("YELLOW"))
+        assertEquals(ZoneStatus.FLOODED, zoneStatusOf(" Red "))
+        assertNull(zoneStatusOf(""))
+        assertNull(zoneStatusOf(null))
+        assertNull(zoneStatusOf("blue"))
     }
 
     @Test

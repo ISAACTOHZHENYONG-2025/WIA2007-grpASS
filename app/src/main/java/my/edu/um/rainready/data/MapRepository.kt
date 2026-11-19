@@ -6,7 +6,11 @@ import my.edu.um.rainready.model.MapState
 import my.edu.um.rainready.model.ReportPin
 import my.edu.um.rainready.model.ZoneStatus
 
-/** Where the campus map gets zone statuses and report pins. */
+/**
+ * Where the campus map gets zone statuses and report pins. A real repository only passes on each
+ * zone's colour: zoneStatusOf("green" / "yellow" / "red") turns it into a status, and the map
+ * decides how that status is drawn.
+ */
 interface MapRepository {
     val map: Flow<MapState>
 }

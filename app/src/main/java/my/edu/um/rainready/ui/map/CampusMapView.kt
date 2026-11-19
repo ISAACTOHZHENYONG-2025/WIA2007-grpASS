@@ -97,7 +97,7 @@ internal class CampusMapView(private val context: Context, zonesGeoJson: String)
         val zoneFeatures = ArrayList<Feature>(zones.size)
         val labelFeatures = ArrayList<Feature>(zones.size)
         for (z in zones) {
-            val id = z.getStringProperty("id") ?: continue
+            val id = z.getStringProperty("zoneId") ?: continue
             val status = state.zoneStatus[id] ?: ZoneStatus.CLEAR
             val props = z.properties()?.deepCopy() ?: JsonObject()
             props.addProperty("status", status.key)
@@ -111,8 +111,8 @@ internal class CampusMapView(private val context: Context, zonesGeoJson: String)
                 addProperty("image", image)
                 addProperty("rank", status.rank) // more serious zones win when labels collide
             }
-            val lon = z.getNumberProperty("label_lon")?.toDouble() ?: continue
-            val lat = z.getNumberProperty("label_lat")?.toDouble() ?: continue
+            val lon = z.getNumberProperty("labelLon")?.toDouble() ?: continue
+            val lat = z.getNumberProperty("labelLat")?.toDouble() ?: continue
             labelFeatures += Feature.fromGeometry(Point.fromLngLat(lon, lat), label)
         }
         s.getSourceAs<GeoJsonSource>(SRC_ZONES)?.setGeoJson(FeatureCollection.fromFeatures(zoneFeatures))

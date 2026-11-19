@@ -21,15 +21,24 @@ class ZonesFileTest {
 
     @Test
     fun hasTheTenDraftZones() {
-        val ids = zones.map { it.getAsJsonObject("properties")["id"].asString }
+        // Field names follow DATA_LAYOUT.md v1: zoneId and groundLevel.
+        val ids = zones.map { it.getAsJsonObject("properties")["zoneId"].asString }
         assertEquals((1..10).map { "Z$it" }, ids)
+    }
+
+    @Test
+    fun everyZoneHasAGroundLevel() {
+        for (z in zones) {
+            val p = z.getAsJsonObject("properties")
+            assertTrue("${p["zoneId"]} groundLevel", p["groundLevel"].asString in setOf("low", "medium", "high"))
+        }
     }
 
     @Test
     fun everyZoneHasAShortLabel() {
         for (z in zones) {
             val p = z.getAsJsonObject("properties")
-            assertTrue("${p["id"]} label", p["label"].asString.isNotBlank() && p["label"].asString.length <= 30)
+            assertTrue("${p["zoneId"]} label", p["label"].asString.isNotBlank() && p["label"].asString.length <= 30)
         }
     }
 
@@ -37,14 +46,14 @@ class ZonesFileTest {
     fun everyLabelPointIsInsideItsZone() {
         for (z in zones) {
             val p = z.getAsJsonObject("properties")
-            val x = p["label_lon"].asDouble
-            val y = p["label_lat"].asDouble
+            val x = p["labelLon"].asDouble
+            val y = p["labelLat"].asDouble
             val g = z.getAsJsonObject("geometry")
             val polygons: List<JsonArray> = when (g["type"].asString) {
                 "Polygon" -> listOf(g.getAsJsonArray("coordinates"))
                 else -> g.getAsJsonArray("coordinates").map { it.asJsonArray }
             }
-            assertTrue("${p["id"]} label point", polygons.any { inside(x, y, it) })
+            assertTrue("${p["zoneId"]} label point", polygons.any { inside(x, y, it) })
         }
     }
 

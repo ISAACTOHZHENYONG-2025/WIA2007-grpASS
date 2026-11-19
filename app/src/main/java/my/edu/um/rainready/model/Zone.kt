@@ -6,6 +6,18 @@ package my.edu.um.rainready.model
  */
 enum class ZoneStatus { CLEAR, CAUTION, FLOODED }
 
+/**
+ * Turns the colour the data side stores for a zone (green, yellow or red, in any case) into a
+ * [ZoneStatus]. How each status is drawn (symbol, outline) is up to the UI, not the data.
+ * Returns null for anything else, such as the empty staffOverride that means "no override".
+ */
+fun zoneStatusOf(colour: String?): ZoneStatus? = when (colour?.trim()?.lowercase()) {
+    "green" -> ZoneStatus.CLEAR
+    "yellow" -> ZoneStatus.CAUTION
+    "red" -> ZoneStatus.FLOODED
+    else -> null
+}
+
 /** One campus zone as the Home screen and the map show it. */
 data class ZoneSummary(
     val id: String,
