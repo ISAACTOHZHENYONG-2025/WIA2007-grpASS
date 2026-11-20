@@ -44,7 +44,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import my.edu.um.rainready.R
 import my.edu.um.rainready.model.MapState
 import my.edu.um.rainready.model.ZoneStatus
-import my.edu.um.rainready.model.isStale
 import my.edu.um.rainready.ui.components.ZoneSymbol
 import my.edu.um.rainready.ui.components.style
 import my.edu.um.rainready.ui.map.CampusMapView
@@ -56,10 +55,13 @@ import java.util.Date
  * Campus map (FR2.1, FR2.2), from Figma "04 Map": zones with colour, outline style, symbol and word,
  * grey and red report pins, "Updated" time, a grey banner when data is over 15 minutes old,
  * a colour legend and the OpenStreetMap credit.
+ *
+ * @param clock the time now, in epoch milliseconds. Tests pass a fake clock.
  */
 @Composable
-fun MapScreen(state: MapState?, modifier: Modifier = Modifier, nowMillis: Long = System.currentTimeMillis()) {
+fun MapScreen(state: MapState?, modifier: Modifier = Modifier, clock: () -> Long = System::currentTimeMillis) {
     val context = LocalContext.current
+    val stale = rememberIsStale(state?.updatedAtMillis, clock)
     val map = remember {
         val zones = context.assets.open("zones.geojson").bufferedReader().use { it.readText() }
         CampusMapView(context, zones)
@@ -80,7 +82,7 @@ fun MapScreen(state: MapState?, modifier: Modifier = Modifier, nowMillis: Long =
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             MapHeader(state, showLegend, onToggleLegend = { showLegend = !showLegend })
-            if (state != null && state.isStale(nowMillis)) {
+            if (state != null && stale) {
                 InfoBanner(
                     stringResource(R.string.banner_offline_title),
                     stringResource(R.string.banner_offline_body, timeText(state.updatedAtMillis)),
