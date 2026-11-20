@@ -36,6 +36,13 @@ fun List<ZoneSummary>.worstStatus(): ZoneStatus = maxOfOrNull { it.status } ?: Z
 /** True when the data was last refreshed more than 15 minutes before [nowMillis]. */
 fun HomeState.isStale(nowMillis: Long): Boolean = nowMillis - updatedAtMillis > STALE_AFTER_MILLIS
 
+/**
+ * How long until data refreshed at [updatedAtMillis] counts as stale, in milliseconds;
+ * 0 once it already is. The screens' timer sleeps this long instead of checking every second.
+ */
+fun millisUntilStale(updatedAtMillis: Long, nowMillis: Long): Long =
+    (updatedAtMillis + STALE_AFTER_MILLIS + 1 - nowMillis).coerceAtLeast(0L)
+
 /** Everything the Home screen needs. */
 data class HomeState(
     /** One line about the rain, e.g. "Heavy rain now, until about 11 AM". */

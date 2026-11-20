@@ -33,7 +33,6 @@ import my.edu.um.rainready.R
 import my.edu.um.rainready.data.SampleHomeRepository
 import my.edu.um.rainready.model.HomeState
 import my.edu.um.rainready.model.ZoneStatus
-import my.edu.um.rainready.model.isStale
 import my.edu.um.rainready.model.worstStatus
 import my.edu.um.rainready.ui.components.ZoneCard
 import my.edu.um.rainready.ui.components.ZoneSymbol
@@ -47,6 +46,7 @@ import java.util.Date
  * @param onChooseBuilding opens the "Can I get to class?" building picker.
  * @param onShowLegend opens the colour legend. The link is hidden while this is null
  *   (the legend dialog is Isaac's card).
+ * @param clock the time now, in epoch milliseconds. Tests pass a fake clock.
  */
 @Composable
 fun HomeScreen(
@@ -54,7 +54,7 @@ fun HomeScreen(
     onChooseBuilding: () -> Unit,
     modifier: Modifier = Modifier,
     onShowLegend: (() -> Unit)? = null,
-    nowMillis: Long = System.currentTimeMillis(),
+    clock: () -> Long = System::currentTimeMillis,
 ) {
     Column(
         modifier = modifier
@@ -75,7 +75,7 @@ fun HomeScreen(
 
         RouteCheckCard(onChooseBuilding)
 
-        StatusBanner(state, nowMillis)
+        StatusBanner(state, rememberIsStale(state.updatedAtMillis, clock))
 
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -140,11 +140,13 @@ private fun RouteCheckCard(onChooseBuilding: () -> Unit) {
     }
 }
 
-/** Summary banner: worst status across the zones, with the "last updated" time (FR2.1). */
+/**
+ * Summary banner: worst status across the zones, with the "last updated" time (FR2.1).
+ * Grey "Can't get new reports" instead when [stale].
+ */
 @Composable
-private fun StatusBanner(state: HomeState, nowMillis: Long) {
+private fun StatusBanner(state: HomeState, stale: Boolean) {
     val time = DateFormat.getTimeFormat(LocalContext.current).format(Date(state.updatedAtMillis))
-    val stale = state.isStale(nowMillis)
     val flooded = state.zones.filter { it.status == ZoneStatus.FLOODED }
     val caution = state.zones.filter { it.status == ZoneStatus.CAUTION }
     val worst = state.zones.worstStatus()
