@@ -248,5 +248,14 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isStaff();
     }
+// =========================================================================
+    // 8. ZONE WARNING COOLDOWNS COLLECTION
+    // Written only by the GitHub rain-warning robot (Admin SDK).
+    // Phones get read-only access for backup check deduplication & UI display.
+    // =========================================================================
+    match /zoneWarningCooldowns/{zoneId} {
+      allow read: if isValidZoneId(zoneId);
+      allow write: if false;
+    }
   }
 }
