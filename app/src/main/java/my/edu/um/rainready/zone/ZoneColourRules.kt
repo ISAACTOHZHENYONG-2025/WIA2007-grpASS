@@ -3,6 +3,7 @@ package my.edu.um.rainready.zone
 object ZoneColourRules {
     private const val STALE_REPORT_MS = 6 * 60 * 60 * 1000L
     private const val STALE_WEATHER_MS = 15 * 60 * 1000L
+    private const val MAX_OVERRIDE_MS = 12 * 60 * 60 * 1000L
 
     fun compute(
         input: ZoneInput,
@@ -19,10 +20,11 @@ object ZoneColourRules {
                 (nowMillis - input.weatherFetchedAtMillis) <= STALE_WEATHER_MS
         val staleWeatherBanner = !isWeatherFresh
 
-        // 1. Active staff override (capped at 12h via staffOverrideUntilMillis; cleared when blank/null/expired)
+        // 1. Active staff override (cleared when blank/null/expired). DATA_LAYOUT caps an override at
+        //    12h, so an end time more than 12h away is treated as a bad value and ignored.
         val override = parseColour(input.staffOverride)
         val until = input.staffOverrideUntilMillis
-        if (override != null && until != null && nowMillis < until) {
+        if (override != null && until != null && nowMillis < until && until - nowMillis <= MAX_OVERRIDE_MS) {
             return ZoneState(
                 zoneId = input.zoneId,
                 colour = override,
@@ -76,10 +78,16 @@ object ZoneColourRules {
             )
         }
 
-        // 4. Stale or missing weather without override/report: retain previous state instead of forcing GREEN
-        if (!isWeatherFresh && previousState != null) {
+        // 4. Stale or missing weather without override/report: keep a previous rain YELLOW instead of
+        //    forcing GREEN. Only a rain result is kept: overrides and reports were checked again above,
+        //    so a previous RED from an override that has ended or a report that was fixed must not stay.
+        //    The message is kept as it was; staleWeatherBanner tells the screen the weather is old
+        //    (adding text here would add it again on every recompute).
+        if (!isWeatherFresh && previousState != null &&
+            previousState.zoneId == input.zoneId &&
+            previousState.reason == ZoneReason.RAIN_ON_GROUND
+        ) {
             return previousState.copy(
-                message = "${previousState.message} (Weather data stale or unavailable)",
                 forecastOnly = false,
                 staleWeatherBanner = true,
                 missingInputs = missing,
