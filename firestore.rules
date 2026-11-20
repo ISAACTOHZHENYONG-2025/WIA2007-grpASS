@@ -1,19 +1,261 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // This rule allows anyone with your Firestore database reference to view, edit,
-    // and delete all data in your Firestore database. It is useful for getting
-    // started, but it is configured to expire after 30 days because it
-    // leaves your app open to attackers. At that time, all client
-    // requests to your Firestore database will be denied.
-    //
-    // Make sure to write security rules for your app before that time, or else
-    // all client requests to your Firestore database will be denied until you Update
-    // your rules
-    match /{document=**} {
-      allow read, write: if request.time < timestamp.date(2026, 12, 6);
+    // =========================================================================
+    // 1. HELPER FUNCTIONS (Auth, UM Domain, Staff Role, Geofence, Zone IDs)
+    // =========================================================================
+
+    // FR1.3 & NFR2: Only signed-in users with a verified @siswa.um.edu.my or
+    // @um.edu.my email address can create reports, view photos, confirm, or flag.
+    // 100% of @gmail.com or unverified accounts are rejected.
+    function isSignedInUM() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email != null
+        && (request.auth.token.email.matches('.*@siswa\\.um\\.edu\\.my$')
+            || request.auth.token.email.matches('.*@um\\.edu\\.my$'));
+    }
+
+    // FR1.3 & FR3.3: Staff / admin accounts listed in the 'admins' collection.
+    function isStaff() {
+      return isSignedInUM()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Valid campus zone IDs (Z1 to Z10) from DATA_LAYOUT.md Section 2 & 3.1.
+    function isValidZoneId(zoneId) {
+      return zoneId is string
+        && zoneId in ['Z1', 'Z2', 'Z3', 'Z4', 'Z5', 'Z6', 'Z7', 'Z8', 'Z9', 'Z10'];
+    }
+
+    // NFR2 Geofence: Position must be inside Universiti Malaya campus + ~100 m margin.
+    // Campus bounds (+100 m buffer): lat [3.108, 3.135], lng [101.643, 101.666].
+    // Rejects coordinates >= 200 m outside UM (e.g., lat 3.100 or lng 101.677).
+    function isInsideUM(lat, lng) {
+      return lat is number && lng is number
+        && lat >= 3.108 && lat <= 3.135
+        && lng >= 101.643 && lng <= 101.666;
+    }
+
+    // Helper: check if the caller is the original reporter recorded in reports_private.
+    function isReporter(reportId) {
+      return isSignedInUM()
+        && exists(/databases/$(database)/documents/reports_private/$(reportId))
+        && get(/databases/$(database)/documents/reports_private/$(reportId)).data.createdBy == request.auth.uid;
+    }
+
+    // =========================================================================
+    // 2. ZONES COLLECTION (DATA_LAYOUT.md Section 3.1)
+    // Live staff override state only. Publicly readable; writable only by staff.
+    // =========================================================================
+    match /zones/{zoneId} {
+      allow read: if true;
+
+      allow create, update: if isStaff()
+        && isValidZoneId(zoneId)
+        && request.resource.data.zoneId == zoneId
+        && (request.resource.data.staffOverride == null
+            || request.resource.data.staffOverride in ['', 'green', 'yellow', 'red']);
+
+      allow delete: if isStaff();
+    }
+
+    // =========================================================================
+    // 3. REPORTS COLLECTION & SUBCOLLECTIONS (DATA_LAYOUT.md Sections 3.2, 3.4-3.6)
+    // Public map pin metadata (text only — NO reporter identity, NO raw photos).
+    // =========================================================================
+    match /reports/{reportId} {
+      // Publicly readable so unauthenticated users can check map & routes (Scene 2).
+      allow read: if true;
+
+      // FR3.1 & NFR2: Create a new report
+      allow create: if isSignedInUM()
+        && request.resource.data.reportId == reportId
+        && isValidZoneId(request.resource.data.zoneId)
+        && request.resource.data.category in ['flood', 'fallen tree', 'blocked drain']
+        && (!('note' in request.resource.data)
+            || (request.resource.data.note is string && request.resource.data.note.size() <= 300))
+        && isInsideUM(request.resource.data.lat, request.resource.data.lng)
+        && request.resource.data.confirmCount == 1
+        && (!('photoCount' in request.resource.data)
+            || (request.resource.data.photoCount is number
+                && request.resource.data.photoCount >= 1
+                && request.resource.data.photoCount <= 3))
+        && (!('flagCount' in request.resource.data) || request.resource.data.flagCount == 0)
+        && (!('fixedAt' in request.resource.data)
+            || request.resource.data.fixedAt == ''
+            || request.resource.data.fixedAt == null)
+        // Students create 'unconfirmed' reports; staff can create 'confirmed' directly
+        && (request.resource.data.status == 'unconfirmed'
+            || (isStaff() && request.resource.data.status == 'confirmed'))
+        // Privacy check: reporter identity and raw photo bytes must NEVER be on public reports
+        && !('createdBy' in request.resource.data)
+        && !('reporterEmail' in request.resource.data)
+        && !('imageBase64' in request.resource.data);
+
+      // FR3.2 & FR3.3: Update report (Staff actions, Student confirmation transaction, or Student flag transaction)
+      allow update: if
+        // Case A: Staff can mark confirmed/fixed, set fixedAt, or clear flagCount, keeping core fields unchanged
+        (isStaff()
+          && request.resource.data.reportId == resource.data.reportId
+          && request.resource.data.zoneId == resource.data.zoneId
+          && request.resource.data.category == resource.data.category
+          && request.resource.data.lat == resource.data.lat
+          && request.resource.data.lng == resource.data.lng
+          && request.resource.data.status in ['unconfirmed', 'confirmed', 'fixed'])
+        ||
+        // Case B: Student confirmation transaction (+1 confirmCount, flips to 'confirmed' at >= 3)
+        // Must atomically create reports/{reportId}/confirmations/{request.auth.uid} in the same transaction
+        (isSignedInUM()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['confirmCount', 'status'])
+          && request.resource.data.confirmCount == resource.data.confirmCount + 1
+          && !exists(/databases/$(database)/documents/reports/$(reportId)/confirmations/$(request.auth.uid))
+          && existsAfter(/databases/$(database)/documents/reports/$(reportId)/confirmations/$(request.auth.uid))
+          && (
+            (request.resource.data.confirmCount >= 3 && resource.data.status == 'unconfirmed'
+              && request.resource.data.status == 'confirmed')
+            ||
+            (request.resource.data.confirmCount < 3
+              && request.resource.data.status == resource.data.status)
+            ||
+            (resource.data.status == 'confirmed'
+              && request.resource.data.status == 'confirmed')
+          ))
+        ||
+        // Case C: Student photo-flag transaction (+1 flagCount)
+        // Must atomically create reports/{reportId}/flags/{request.auth.uid} in the same transaction
+        (isSignedInUM()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['flagCount'])
+          && request.resource.data.flagCount == resource.data.flagCount + 1
+          && !exists(/databases/$(database)/documents/reports/$(reportId)/flags/$(request.auth.uid))
+          && existsAfter(/databases/$(database)/documents/reports/$(reportId)/flags/$(request.auth.uid)));
+
+      // FR3.3: Only staff or the original reporter (verified via reports_private) can delete a report
+      allow delete: if isStaff() || isReporter(reportId);
+
+      // -----------------------------------------------------------------------
+      // 3a. PHOTOS SUBCOLLECTION: reports/{reportId}/photos/{photoId}
+      // Readable ONLY by signed-in UM users (PLAN Section 5 & 6.4).
+      // -----------------------------------------------------------------------
+      match /photos/{photoId} {
+        allow read: if isSignedInUM();
+
+        allow create: if isSignedInUM()
+          && photoId in ['p1', 'p2', 'p3']
+          && request.resource.data.photoId == photoId
+          && request.resource.data.imageBase64 is string
+          && request.resource.data.imageBase64.size() > 0
+          && request.resource.data.imageBase64.size() <= 150000
+          && request.resource.data.widthPx is number
+          && request.resource.data.widthPx <= 800
+          && request.resource.data.heightPx is number
+          && request.resource.data.heightPx <= 800
+          && (
+            isReporter(reportId)
+            || (existsAfter(/databases/$(database)/documents/reports_private/$(reportId))
+                && getAfter(/databases/$(database)/documents/reports_private/$(reportId)).data.createdBy == request.auth.uid)
+          );
+
+        allow update: if false;
+        allow delete: if isStaff() || isReporter(reportId);
+      }
+
+      // -----------------------------------------------------------------------
+      // 3b. CONFIRMATIONS SUBCOLLECTION: reports/{reportId}/confirmations/{userId}
+      // Document ID is userId -> strictly 1 confirmation vote per person (NFR2).
+      // -----------------------------------------------------------------------
+      match /confirmations/{userId} {
+        allow read: if true;
+
+        allow create: if isSignedInUM()
+          && request.auth.uid == userId
+          && request.resource.data.userId == userId
+          && !exists(/databases/$(database)/documents/reports/$(reportId)/confirmations/$(userId));
+
+        // Disallow updates so a user cannot overwrite or re-trigger their vote
+        allow update: if false;
+        allow delete: if isStaff() || isReporter(reportId);
+      }
+
+      // -----------------------------------------------------------------------
+      // 3c. FLAGS SUBCOLLECTION: reports/{reportId}/flags/{userId}
+      // Document ID is userId -> strictly 1 photo flag vote per student (FR3.3).
+      // -----------------------------------------------------------------------
+      match /flags/{userId} {
+        allow read: if isSignedInUM();
+
+        allow create: if isSignedInUM()
+          && request.auth.uid == userId
+          && request.resource.data.userId == userId
+          && request.resource.data.reason in ['face visible', 'wrong place', 'spam']
+          && !exists(/databases/$(database)/documents/reports/$(reportId)/flags/$(userId));
+
+        allow update: if false;
+        allow delete: if isStaff();
+      }
+    }
+
+    // =========================================================================
+    // 4. REPORTS_PRIVATE COLLECTION (DATA_LAYOUT.md Section 3.3)
+    // Stores reporter identity (createdBy, reporterEmail).
+    // Readable ONLY by the reporter themselves and staff (never public!).
+    // =========================================================================
+    match /reports_private/{reportId} {
+      allow read: if isStaff()
+        || (isSignedInUM() && resource.data.createdBy == request.auth.uid);
+
+      allow create: if isSignedInUM()
+        && request.resource.data.reportId == reportId
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.reporterEmail == request.auth.token.email;
+
+      allow update: if false;
+
+      allow delete: if isStaff()
+        || (isSignedInUM() && resource.data.createdBy == request.auth.uid);
+    }
+
+    // =========================================================================
+    // 5. NOTICES COLLECTION (DATA_LAYOUT.md Section 3.7)
+    // Official bilingual campus announcements. Publicly readable; staff-only write.
+    // =========================================================================
+    match /notices/{noticeId} {
+      allow read: if true;
+
+      allow create, update: if isStaff()
+        && request.resource.data.noticeId == noticeId
+        && request.resource.data.textEn is string
+        && request.resource.data.textEn.size() > 0;
+
+      allow delete: if isStaff();
+    }
+
+    // =========================================================================
+    // 6. ADMINS COLLECTION (DATA_LAYOUT.md Section 3.8)
+    // Staff lookup table. Readable by signed-in UM users; managed only in Console.
+    // =========================================================================
+    match /admins/{uid} {
+      allow read: if isSignedInUM();
+      allow write: if false;
+    }
+
+    // =========================================================================
+    // 7. STATS COLLECTION (DATA_LAYOUT.md Section 3.9)
+    // Anonymous records kept after 14-day cleanup. Public read; staff/Admin SDK write.
+    // =========================================================================
+    match /stats/{statId} {
+      allow read: if true;
+      allow write: if isStaff();
+    }
+// =========================================================================
+    // 8. ZONE WARNING COOLDOWNS COLLECTION
+    // Written only by the GitHub rain-warning robot (Admin SDK).
+    // Phones get read-only access for backup check deduplication & UI display.
+    // =========================================================================
+    match /zoneWarningCooldowns/{zoneId} {
+      allow read: if isValidZoneId(zoneId);
+      allow write: if false;
     }
   }
 }
