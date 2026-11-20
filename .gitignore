@@ -1,4 +1,3 @@
- HEAD
 # Android / Gradle
 *.iml
 .gradle/
@@ -45,7 +44,6 @@ test-photos/
 ai-tests/photos/
 *.mp4
 *.mov
-=======
 *.iml
 .gradle
 /local.properties
@@ -61,4 +59,7 @@ ai-tests/photos/
 .externalNativeBuild
 .cxx
 local.properties
-f2f1b0b (feat: initialize project skeleton and integrate Firebase)
+
+# AI coding-agent skill packs installed by IDE agents (not project code)
+.agents/
+skills-lock.json

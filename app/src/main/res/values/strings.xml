@@ -1,3 +1,51 @@
 <resources>
     <string name="app_name">RainReady</string>
+
+    <!-- Bottom bar -->
+    <string name="tab_home">Home</string>
+    <string name="tab_map">Map</string>
+    <string name="tab_notices">Notices</string>
+    <string name="tab_settings">Settings</string>
+    <string name="back">Back</string>
+
+    <!-- Zone status words (always shown with the colour and symbol) -->
+    <string name="zone_clear">Clear</string>
+    <string name="zone_caution">Caution</string>
+    <string name="zone_flooded">Flooded</string>
+
+    <!-- Home -->
+    <string name="home_route_title">Can I get to class?</string>
+    <string name="home_route_body">Pick the building you are going to. We check every path against live reports.</string>
+    <string name="home_choose_building">Choose a building</string>
+    <string name="home_your_zones">Your zones</string>
+    <string name="home_colour_legend">What do the colours mean?</string>
+
+    <plurals name="banner_flooded_title">
+        <item quantity="one">Flooding reported in %d zone</item>
+        <item quantity="other">Flooding reported in %d zones</item>
+    </plurals>
+    <plurals name="banner_caution_title">
+        <item quantity="one">Caution in %d zone</item>
+        <item quantity="other">Caution in %d zones</item>
+    </plurals>
+    <string name="banner_clear_title">No problems reported</string>
+    <!-- %1$s = zone names, %2$s = time -->
+    <string name="banner_zones_updated">%1$s · last updated %2$s</string>
+    <string name="banner_updated">Last updated %s</string>
+    <string name="banner_offline_title">Can\'t get new reports</string>
+    <string name="banner_offline_body">Showing data from %s. Check your connection.</string>
+
+    <!-- Map -->
+    <string name="map_title">Campus map</string>
+    <string name="map_updated">Updated %s</string>
+    <string name="map_legend_show">Show colour legend</string>
+    <string name="map_legend_hide">Hide colour legend</string>
+    <string name="legend_unconfirmed">Unconfirmed report</string>
+    <string name="legend_confirmed">Confirmed report</string>
+    <string name="map_credit">© OpenStreetMap contributors</string>
+    <string name="map_load_failed_title">The map could not load</string>
+    <string name="map_load_failed_body">Check your connection. Zone colours still show on the Home screen.</string>
+
+    <!-- Route check (week 4) -->
+    <string name="route_check_placeholder">The building picker and route verdicts are built in week 4.</string>
 </resources>
