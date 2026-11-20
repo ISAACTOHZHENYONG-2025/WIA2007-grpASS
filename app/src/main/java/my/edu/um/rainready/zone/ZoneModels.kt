@@ -26,13 +26,10 @@ data class ZoneInput(
     val staffOverride: String?,
     val staffOverrideUntilMillis: Long?,
     val reports: List<ReportInput>,
-    val rainMmPerHour: Double?
+    val rainMmPerHour: Double?,
+    val weatherFetchedAtMillis: Long?=null
 )
 
-/**
- * Screen-agnostic zone state consumed by map rendering and UI layers.
- * Precedence: STAFF_OVERRIDE > CONFIRMED_REPORT > RAIN_ON_GROUND (yellow at most) > NO_PROBLEMS_REPORTED.
- */
 data class ZoneState(
     val zoneId: String,
     val colour: ZoneColour,
@@ -40,6 +37,7 @@ data class ZoneState(
     val message: String,
     val reportCategory: String? = null,
     val forecastOnly: Boolean = false,
+    val staleWeatherBanner: Boolean = false,
     val missingInputs: List<String> = emptyList(),
     val computedAtMillis: Long
 )

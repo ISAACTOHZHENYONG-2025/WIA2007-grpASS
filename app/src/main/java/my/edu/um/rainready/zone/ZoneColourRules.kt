@@ -1,14 +1,25 @@
 package my.edu.um.rainready.zone
 
 object ZoneColourRules {
-    private const val STALE_MS = 6 * 60 * 60 * 1000L
+    private const val STALE_REPORT_MS = 6 * 60 * 60 * 1000L
+    private const val STALE_WEATHER_MS = 15 * 60 * 1000L
 
-    fun compute(input: ZoneInput, nowMillis: Long): ZoneState {
+    fun compute(
+        input: ZoneInput,
+        nowMillis: Long,
+        previousState: ZoneState? = null
+    ): ZoneState {
         val missing = mutableListOf<String>()
         if (input.rainMmPerHour == null) missing += "rain"
         if (input.groundLevel == null) missing += "groundLevel"
+        if (input.weatherFetchedAtMillis == null) missing += "weatherFetchedAt"
 
-        // Precedence 1: Active staff override takes top priority
+        val isWeatherFresh = input.rainMmPerHour != null &&
+                input.weatherFetchedAtMillis != null &&
+                (nowMillis - input.weatherFetchedAtMillis) <= STALE_WEATHER_MS
+        val staleWeatherBanner = !isWeatherFresh
+
+        // 1. Active staff override (capped at 12h via staffOverrideUntilMillis; cleared when blank/null/expired)
         val override = parseColour(input.staffOverride)
         val until = input.staffOverrideUntilMillis
         if (override != null && until != null && nowMillis < until) {
@@ -17,35 +28,38 @@ object ZoneColourRules {
                 colour = override,
                 reason = ZoneReason.STAFF_OVERRIDE,
                 message = "Set by staff",
+                staleWeatherBanner = staleWeatherBanner,
                 missingInputs = missing,
                 computedAtMillis = nowMillis
             )
         }
 
-        // Precedence 2: Fresh, unfixed, confirmed reports make the zone red
-        val active = input.reports
+        // 2. Confirmed, unfixed report within 6h of createdAt; unconfirmed never triggers RED
+        val activeReport = input.reports
             .filter {
-                it.status == "confirmed" &&
+                it.status.equals("confirmed", ignoreCase = true) &&
                         it.fixedAtMillis == null &&
                         it.createdAtMillis != null &&
-                        nowMillis - it.createdAtMillis < STALE_MS
+                        (nowMillis - it.createdAtMillis) < STALE_REPORT_MS
             }
             .maxByOrNull { it.createdAtMillis!! }
-        if (active != null) {
+
+        if (activeReport != null) {
             return ZoneState(
                 zoneId = input.zoneId,
                 colour = ZoneColour.RED,
                 reason = ZoneReason.CONFIRMED_REPORT,
-                message = "${active.category.replaceFirstChar { it.uppercase() }} confirmed",
-                reportCategory = active.category,
+                message = "${activeReport.category.replaceFirstChar { it.uppercase() }} confirmed",
+                reportCategory = activeReport.category,
+                staleWeatherBanner = staleWeatherBanner,
                 missingInputs = missing,
                 computedAtMillis = nowMillis
             )
         }
 
-        // Precedence 3: Rain threshold by ground level (yellow at most)
-        if (isRainYellow(input.groundLevel, input.rainMmPerHour)) {
-            val isLow = input.groundLevel?.lowercase() == "low"
+        // 3. Fresh weather rain check (yellow at most; never issue fresh rain warning from stale/missing weather)
+        if (isWeatherFresh && isRainYellow(input.groundLevel, input.rainMmPerHour)) {
+            val isLow = input.groundLevel?.equals("low", ignoreCase = true) == true
             return ZoneState(
                 zoneId = input.zoneId,
                 colour = ZoneColour.YELLOW,
@@ -56,17 +70,34 @@ object ZoneColourRules {
                     "Heavy rain forecast on medium ground, forecast only"
                 },
                 forecastOnly = true,
+                staleWeatherBanner = false,
                 missingInputs = missing,
                 computedAtMillis = nowMillis
             )
         }
 
-        // Precedence 4: Default green state (never "All clear")
+        // 4. Stale or missing weather without override/report: retain previous state instead of forcing GREEN
+        if (!isWeatherFresh && previousState != null) {
+            return previousState.copy(
+                message = "${previousState.message} (Weather data stale or unavailable)",
+                forecastOnly = false,
+                staleWeatherBanner = true,
+                missingInputs = missing,
+                computedAtMillis = nowMillis
+            )
+        }
+
+        // 5. Default green when data is fresh and no active override/report/rain warning applies
         return ZoneState(
             zoneId = input.zoneId,
             colour = ZoneColour.GREEN,
             reason = ZoneReason.NO_PROBLEMS_REPORTED,
-            message = "No problems reported",
+            message = if (staleWeatherBanner) {
+                "Weather data stale or unavailable; no active incidents reported"
+            } else {
+                "No problems reported"
+            },
+            staleWeatherBanner = staleWeatherBanner,
             missingInputs = missing,
             computedAtMillis = nowMillis
         )
@@ -74,7 +105,8 @@ object ZoneColourRules {
 
     // Assumption per Plan 6.2: remove "medium" branch if team decides yellow applies to low ground only
     internal fun isRainYellow(ground: String?, mm: Double?): Boolean {
-        return !(ground == null || mm == null) && when (ground.lowercase()) {
+        if (ground == null || mm == null) return false
+        return when (ground.trim().lowercase()) {
             "low" -> mm >= 5.0
             "medium" -> mm > 15.0
             else -> false
