@@ -35,6 +35,17 @@
     <string name="banner_offline_title">Can\'t get new reports</string>
     <string name="banner_offline_body">Showing data from %s. Check your connection.</string>
 
+    <!-- Map -->
+    <string name="map_title">Campus map</string>
+    <string name="map_updated">Updated %s</string>
+    <string name="map_legend_show">Show colour legend</string>
+    <string name="map_legend_hide">Hide colour legend</string>
+    <string name="legend_unconfirmed">Unconfirmed report</string>
+    <string name="legend_confirmed">Confirmed report</string>
+    <string name="map_credit">© OpenStreetMap contributors</string>
+    <string name="map_load_failed_title">The map could not load</string>
+    <string name="map_load_failed_body">Check your connection. Zone colours still show on the Home screen.</string>
+
     <!-- Route check (week 4) -->
     <string name="route_check_placeholder">The building picker and route verdicts are built in week 4.</string>
 </resources>

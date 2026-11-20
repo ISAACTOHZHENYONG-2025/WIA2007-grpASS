@@ -26,7 +26,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import my.edu.um.rainready.R
 import my.edu.um.rainready.data.HomeRepository
+import my.edu.um.rainready.data.MapRepository
 import my.edu.um.rainready.data.SampleHomeRepository
+import my.edu.um.rainready.data.SampleMapRepository
 
 /** The four bottom-bar tabs from the Figma nav bar. */
 enum class Tab(val route: String, @param:StringRes val label: Int, @param:DrawableRes val icon: Int) {
@@ -48,6 +50,7 @@ object Routes {
 @Composable
 fun RainReadyApp(
     homeRepository: HomeRepository = remember { SampleHomeRepository() },
+    mapRepository: MapRepository = remember { SampleMapRepository() },
 ) {
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
@@ -96,7 +99,10 @@ fun RainReadyApp(
                 val state by homeRepository.home.collectAsState(initial = null)
                 state?.let { HomeScreen(it, onChooseBuilding = { nav.navigate(Routes.ROUTE_CHECK) }) }
             }
-            composable(Tab.MAP.route) { MapScreen() }
+            composable(Tab.MAP.route) {
+                val state by mapRepository.map.collectAsState(initial = null)
+                MapScreen(state)
+            }
             composable(Tab.NOTICES.route) { NoticesScreen() }
             composable(Tab.SETTINGS.route) { SettingsScreen() }
             composable(Routes.ROUTE_CHECK) { RouteCheckScreen(onBack = { nav.popBackStack() }) }

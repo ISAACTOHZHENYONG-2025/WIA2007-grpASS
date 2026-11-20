@@ -23,9 +23,9 @@ class SampleHomeRepository(rainy: Boolean = true) : HomeRepository {
         fun rainyDay(now: Long = System.currentTimeMillis()) = HomeState(
             weatherLine = "Heavy rain now, until about 11 AM",
             zones = listOf(
-                ZoneSummary("z7", "Engineering", "Confirmed by 3 people · 12 min ago", ZoneStatus.FLOODED),
-                ZoneSummary("z6", "Main Library and DTC", "Heavy rain on low ground until 11 AM", ZoneStatus.CAUTION),
-                ZoneSummary("z1", "FSKTM and Science", "No problems reported", ZoneStatus.CLEAR),
+                ZoneSummary("Z7", "Engineering", "Confirmed by 3 people · 12 min ago", ZoneStatus.FLOODED),
+                ZoneSummary("Z6", "Main Library and DTC", "Heavy rain on low ground until 11 AM", ZoneStatus.CAUTION),
+                ZoneSummary("Z1", "FSKTM", "No problems reported", ZoneStatus.CLEAR),
             ),
             updatedAtMillis = now,
         )
@@ -33,9 +33,9 @@ class SampleHomeRepository(rainy: Boolean = true) : HomeRepository {
         fun calmDay(now: Long = System.currentTimeMillis()) = HomeState(
             weatherLine = "No rain expected in the next 3 hours",
             zones = listOf(
-                ZoneSummary("z7", "Engineering", "No problems reported", ZoneStatus.CLEAR),
-                ZoneSummary("z6", "Main Library and DTC", "No problems reported", ZoneStatus.CLEAR),
-                ZoneSummary("z1", "FSKTM and Science", "No problems reported", ZoneStatus.CLEAR),
+                ZoneSummary("Z7", "Engineering", "No problems reported", ZoneStatus.CLEAR),
+                ZoneSummary("Z6", "Main Library and DTC", "No problems reported", ZoneStatus.CLEAR),
+                ZoneSummary("Z1", "FSKTM", "No problems reported", ZoneStatus.CLEAR),
             ),
             updatedAtMillis = now,
         )
