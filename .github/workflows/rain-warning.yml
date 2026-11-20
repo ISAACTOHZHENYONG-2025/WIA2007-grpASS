@@ -1,0 +1,57 @@
+name: rain-warning
+
+on:
+  # Every 15 minutes (UTC). GitHub can start scheduled runs late, and only runs them from main.
+  schedule:
+    - cron: '*/15 * * * *'
+  # Manual run for testing. Defaults are SAFE: dry run, no simulation.
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: decide and log only, no notification, no Firestore write"
+        type: boolean
+        default: true
+      test_topic:
+        description: "Optional. Send ONE message to this topic (e.g. test) instead of rain_z1..rain_z10. Cooldowns not touched"
+        required: false
+        default: ""
+      simulate_mm:
+        description: "Optional SIMULATION: pretend the forecast is this many mm per hour (e.g. 10, 15, 15.1, 20)"
+        required: false
+        default: ""
+      simulate:
+        description: "Optional SIMULATION of a problem"
+        type: choice
+        options:
+          - none
+          - missing
+          - source_failure
+        default: none
+
+jobs:
+  check-rain:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run logic tests
+        run: node --test robot/rain-logic.test.js
+
+      - name: Install firebase-admin
+        run: npm install --no-save firebase-admin
+
+      - name: Check forecast and send warnings
+        run: node robot/rain-warning.js
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          # On scheduled runs these inputs are empty, so the job runs in LIVE mode with the real forecast.
+          DRY_RUN: ${{ inputs.dry_run }}
+          TEST_TOPIC: ${{ inputs.test_topic }}
+          SIMULATE_MM: ${{ inputs.simulate_mm }}
+          SIMULATE: ${{ inputs.simulate }}
