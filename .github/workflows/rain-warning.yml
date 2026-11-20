@@ -28,6 +28,16 @@ on:
           - source_failure
         default: none
 
+# Only read access to the repo code. The Firebase key comes from the secret, not from GitHub permissions.
+permissions:
+  contents: read
+
+# Only one rain-warning run at a time. A new scheduled or manual run waits for the
+# current one to finish instead of running in parallel (requested in PR #14 review).
+concurrency:
+  group: rain-warning
+  cancel-in-progress: false
+
 jobs:
   check-rain:
     runs-on: ubuntu-latest
@@ -44,7 +54,7 @@ jobs:
         run: node --test robot/rain-logic.test.js
 
       - name: Install firebase-admin
-        run: npm install --no-save firebase-admin
+        run: npm install --no-save firebase-admin@14.5.1  # pinned version
 
       - name: Check forecast and send warnings
         run: node robot/rain-warning.js
