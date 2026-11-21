@@ -39,6 +39,8 @@ import my.edu.um.rainready.ui.components.ZoneSymbol
 import my.edu.um.rainready.ui.components.style
 import my.edu.um.rainready.ui.theme.RainReadyTheme
 import java.util.Date
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 /**
  * Home screen from Figma "01 Home · rain" and "08 Home · no problems".
@@ -91,8 +93,52 @@ fun HomeScreen(
             }
         }
 
+        val context = LocalContext.current
+        val preferences = androidx.compose.runtime.remember {
+            context.getSharedPreferences(
+                "rainready_settings",
+                android.content.Context.MODE_PRIVATE
+            )
+        }
+
+        var followedZones by androidx.compose.runtime.remember {
+            androidx.compose.runtime.mutableStateOf(
+                preferences.getStringSet("followed_zones", emptySet())
+                    ?.toSet() ?: emptySet()
+            )
+        }
+
+        androidx.compose.runtime.DisposableEffect(preferences) {
+            val listener =
+                android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == "followed_zones") {
+                        followedZones = preferences
+                            .getStringSet("followed_zones", emptySet())
+                            ?.toSet() ?: emptySet()
+                    }
+                }
+
+            preferences.registerOnSharedPreferenceChangeListener(listener)
+
+            onDispose {
+                preferences.unregisterOnSharedPreferenceChangeListener(listener)
+            }
+        }
+
+        val visibleZones = if (followedZones.isEmpty()) {
+            state.zones
+        } else {
+            state.zones.filter { it.id in followedZones }
+        }
+
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            state.zones.forEach { ZoneCard(it.name, it.detail, it.status) }
+            if (visibleZones.isEmpty()) {
+                Text("No sample data is available for your selected zones yet.")
+            } else {
+                visibleZones.forEach {
+                    ZoneCard(it.name, it.detail, it.status)
+                }
+            }
         }
     }
 }
