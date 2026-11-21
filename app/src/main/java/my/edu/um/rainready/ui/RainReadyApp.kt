@@ -41,6 +41,7 @@ enum class Tab(val route: String, @param:StringRes val label: Int, @param:Drawab
 /** Screens outside the bottom bar. */
 object Routes {
     const val ROUTE_CHECK = "route_check"
+    const val SIGN_IN = "sign_in"
 }
 
 /**
@@ -104,7 +105,15 @@ fun RainReadyApp(
                 MapScreen(state)
             }
             composable(Tab.NOTICES.route) { NoticesScreen() }
-            composable(Tab.SETTINGS.route) { SettingsScreen() }
+            composable(Tab.SETTINGS.route) {
+                SettingsScreen(
+                    onSignIn = { nav.navigate(Routes.SIGN_IN) }
+                )
+            }
+
+            composable(Routes.SIGN_IN) {
+                SignInScreen(onBack = { nav.popBackStack() })
+            }
             composable(Routes.ROUTE_CHECK) { RouteCheckScreen(onBack = { nav.popBackStack() }) }
         }
     }
