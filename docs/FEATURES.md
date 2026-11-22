@@ -12,7 +12,7 @@ SDG 13, target 13.1. Main users: UM students; staff (JPPHB, college and faculty 
 
 **FR1.2 Follow zones.** The user shall be able to tick the campus zones they care about. Pop-up warnings are sent only for ticked zones; official staff notices go to everyone. If nothing is ticked, warnings cover the whole campus. The choice is stored only on the user's own phone.
 
-**FR1.3 UM-email sign-in and roles.** Viewing the map, receiving alerts and using the route check shall need no sign-in; viewing report photos shall need a signed-in UM account. Reporting and confirming shall need a verified `@siswa.um.edu.my` or `@um.edu.my` email (sign-in by email link). Staff on the admin list shall get an admin page; nobody can make themselves staff from inside the app.
+**FR1.3 UM-email sign-in and roles.** Viewing the map, receiving alerts and using the route check shall need no sign-in; viewing report photos shall need a signed-in UM account. Reporting and confirming shall need a verified `@siswa.um.edu.my` or `@um.edu.my` email (sign-in with a UM email and a separate RainReady password, after email verification). Staff on the admin list shall get an admin page; nobody can make themselves staff from inside the app.
 
 ## Module 2: Flood Map and Route Check (owners: Emmanuel, Jingying)
 
