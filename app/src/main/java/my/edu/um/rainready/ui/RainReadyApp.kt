@@ -29,6 +29,9 @@ import my.edu.um.rainready.data.HomeRepository
 import my.edu.um.rainready.data.MapRepository
 import my.edu.um.rainready.data.SampleHomeRepository
 import my.edu.um.rainready.data.SampleMapRepository
+import kotlinx.coroutines.tasks.await
+import my.edu.um.rainready.data.PhotoBlurProcessor
+import my.edu.um.rainready.faceblur.FaceBlurProcessor
 
 /** The four bottom-bar tabs from the Figma nav bar. */
 enum class Tab(val route: String, @param:StringRes val label: Int, @param:DrawableRes val icon: Int) {
@@ -41,6 +44,7 @@ enum class Tab(val route: String, @param:StringRes val label: Int, @param:Drawab
 /** Screens outside the bottom bar. */
 object Routes {
     const val ROUTE_CHECK = "route_check"
+    const val REPORT = "report"
 }
 
 /**
@@ -101,11 +105,28 @@ fun RainReadyApp(
             }
             composable(Tab.MAP.route) {
                 val state by mapRepository.map.collectAsState(initial = null)
-                MapScreen(state)
+                MapScreen(
+                    state = state,
+                    onReport = { nav.navigate(Routes.REPORT) },
+                )
             }
             composable(Tab.NOTICES.route) { NoticesScreen() }
             composable(Tab.SETTINGS.route) { SettingsScreen() }
             composable(Routes.ROUTE_CHECK) { RouteCheckScreen(onBack = { nav.popBackStack() }) }
+            composable(Routes.REPORT) {
+                val faceBlur = remember { FaceBlurProcessor() }
+                val photoBlur = remember(faceBlur) {
+                    PhotoBlurProcessor { bitmap ->
+                        runCatching { faceBlur.process(bitmap).await().bitmap }
+                    }
+                }
+
+                ReportScreen(
+                    photoBlurProcessor = photoBlur,
+                    onReportSubmitted = { nav.popBackStack() },
+                    onBack = { nav.popBackStack() },
+                )
+            }
         }
     }
 }
