@@ -1,0 +1,50 @@
+<resources>
+    <string name="app_name">RainReady</string>
+
+    <!-- Bottom navigation -->
+    <string name="tab_home">Utama</string>
+    <string name="tab_map">Peta</string>
+    <string name="tab_notices">Notis</string>
+    <string name="tab_settings">Tetapan</string>
+    <string name="back">Kembali</string>
+
+    <!-- Zone status -->
+    <string name="zone_clear">Selamat</string>
+    <string name="zone_caution">Berhati-hati</string>
+    <string name="zone_flooded">Banjir</string>
+
+    <!-- Home -->
+    <string name="home_route_title">Bolehkah saya pergi ke kelas?</string>
+    <string name="home_route_body">Pilih bangunan yang ingin anda tuju. Kami menyemak setiap laluan berdasarkan laporan terkini.</string>
+    <string name="home_choose_building">Pilih bangunan</string>
+    <string name="home_your_zones">Zon anda</string>
+    <string name="home_colour_legend">Apakah maksud warna?</string>
+
+    <plurals name="banner_flooded_title">
+        <item quantity="other">Banjir dilaporkan di %d zon</item>
+    </plurals>
+
+    <plurals name="banner_caution_title">
+        <item quantity="other">Berhati-hati di %d zon</item>
+    </plurals>
+
+    <string name="banner_clear_title">Tiada masalah dilaporkan</string>
+    <string name="banner_zones_updated">%1$s · dikemas kini pada %2$s</string>
+    <string name="banner_updated">Dikemas kini pada %s</string>
+    <string name="banner_offline_title">Tidak dapat menerima laporan baharu</string>
+    <string name="banner_offline_body">Memaparkan data dari %s. Semak sambungan anda.</string>
+
+    <!-- Map -->
+    <string name="map_title">Peta kampus</string>
+    <string name="map_updated">Dikemas kini pada %s</string>
+    <string name="map_legend_show">Tunjukkan petunjuk warna</string>
+    <string name="map_legend_hide">Sembunyikan petunjuk warna</string>
+    <string name="legend_unconfirmed">Laporan belum disahkan</string>
+    <string name="legend_confirmed">Laporan disahkan</string>
+    <string name="map_credit">© Penyumbang OpenStreetMap</string>
+    <string name="map_load_failed_title">Peta tidak dapat dimuatkan</string>
+    <string name="map_load_failed_body">Semak sambungan anda. Warna zon masih dipaparkan pada skrin Utama.</string>
+
+    <!-- Route check -->
+    <string name="route_check_placeholder">Pilihan bangunan dan keputusan laluan akan dibina pada minggu ke-4.</string>
+</resources>

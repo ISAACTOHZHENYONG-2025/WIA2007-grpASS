@@ -8,7 +8,7 @@ Hours are rough planning estimates. Real hours are logged on Trello cards and ar
 
 ### Isaac (Leader): Project manager + developer
 **Builds (Module 1):**
-- UM-email sign-in (email link) and the staff list (Week 2 and 3, because reporting depends on it)
+- UM-email and RainReady password sign-in with email verification and the admin list (Week 2 and 3, because reporting depends on it)
 - Settings screen: language (English/Malay), zones to follow (Week 3)
 - Phone backup rain check: each phone checks Open-Meteo for the followed zones and never shows the same warning twice (moved from Ker Li)
 - Onboarding screens (first thing cut), the "What do the colours mean?" legend, and the Notices tab with the newest-notice card on the home screen (moved from Emmanuel)

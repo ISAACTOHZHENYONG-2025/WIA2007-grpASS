@@ -102,7 +102,7 @@ Each section lists what you build, what you deliver each week, what to research 
 ### Isaac: project manager and Module 1 developer (about 95 hours)
 
 **You build**
-- UM-email sign-in by email link, the staff list, and staff roles (FR1.3)
+- UM-email and RainReady password sign-in with email verification, the admin list, and admin roles (FR1.3)
 - Settings: English or Malay, and the zones you follow (FR1.1, FR1.2)
 - Onboarding screens, the "What do the colours mean?" legend, the Notices tab and the newest-notice card on the home screen
 - The phone backup rain check: each phone checks Open-Meteo for its followed zones and never shows the same warning twice (FR4.1)
@@ -123,7 +123,7 @@ Each section lists what you build, what you deliver each week, what to research 
 | Dec week 3 | Usability round 2 (5 students); your report sections |
 
 **Research first**
-- Firebase Auth email-link sign-in for Android (firebase.google.com/docs/auth). Firebase Dynamic Links has shut down, so follow the current set-up in the docs.
+- Firebase Auth email-and-password sign-in for Android (firebase.google.com/docs/auth), with UM email verification and password recovery.
 - Restricting sign-in to `@siswa.um.edu.my` and `@um.edu.my` (check the email in the app and again in Firestore security rules with zy).
 - App languages in Android: `strings.xml` and a `values-ms` folder for Malay, and per-app language settings.
 - DataStore for saving settings on the phone.

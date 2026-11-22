@@ -22,13 +22,73 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import my.edu.um.rainready.UmAuth
 
+private fun translateAuthMessage(message: String, isMalay: Boolean): String {
+    if (!isMalay) return message
+
+    return when (message) {
+        "Enter a valid UM email address." ->
+            "Masukkan alamat e-mel UM yang sah."
+
+        "Use a password with at least 6 characters." ->
+            "Gunakan kata laluan sekurang-kurangnya 6 aksara."
+
+        "Account could not be loaded. Try signing in." ->
+            "Akaun tidak dapat dimuatkan. Cuba log masuk."
+
+        "Account created. Check your email and verify it before signing in." ->
+            "Akaun telah dibuat. Semak dan sahkan e-mel anda sebelum log masuk."
+
+        "Account created, but verification email failed. Use Resend verification when available." ->
+            "Akaun telah dibuat, tetapi e-mel pengesahan gagal dihantar. Gunakan Hantar semula pengesahan."
+
+        "Could not create account. It may already exist, or the password may not meet the project policy." ->
+            "Akaun tidak dapat dibuat. Akaun mungkin sudah wujud atau kata laluan tidak memenuhi syarat."
+
+        "Enter your UM email and password." ->
+            "Masukkan e-mel UM dan kata laluan anda."
+
+        "Signed in successfully." ->
+            "Log masuk berjaya."
+
+        "Verify your email before signing in." ->
+            "Sahkan e-mel anda sebelum log masuk."
+
+        "Sign-in failed. Check your details and connection." ->
+            "Log masuk gagal. Semak maklumat dan sambungan anda."
+
+        "Could not load your account. Try again." ->
+            "Akaun tidak dapat dimuatkan. Cuba lagi."
+
+        "Your email is already verified. Tap Sign in." ->
+            "E-mel anda sudah disahkan. Tekan Log masuk."
+
+        "Verification email sent. Check your inbox." ->
+            "E-mel pengesahan telah dihantar. Semak peti masuk anda."
+
+        "Could not send the email. Try again later." ->
+            "E-mel tidak dapat dihantar. Cuba lagi kemudian."
+
+        "Check your email, password, and connection." ->
+            "Semak e-mel, kata laluan dan sambungan anda."
+
+        "If an account exists, check your email for a password reset link." ->
+            "Jika akaun wujud, semak e-mel anda untuk pautan menetapkan semula kata laluan."
+        "Could not request a password reset. Check your connection and try again." ->
+            "Permintaan menetapkan semula kata laluan gagal. Semak sambungan dan cuba lagi."
+        else -> message
+    }
+}
+
 @Composable
 fun SignInScreen(onBack: () -> Unit) {
+    val isMalay = LocalConfiguration.current.locales[0].language == "ms"
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
@@ -47,21 +107,34 @@ fun SignInScreen(onBack: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         TextButton(onClick = onBack, enabled = !busy) {
-            Text("Back")
+            Text(if (isMalay) "Kembali" else "Back")
         }
 
         Text(
-            text = "UM sign-in",
+            text = if (isMalay) "Log masuk UM" else "UM sign-in",
             style = MaterialTheme.typography.headlineMedium
         )
 
-        Text("Sign in to report or confirm campus hazards. The map is open to everyone.")
+        Text(
+            if (isMalay) {
+                "Log masuk untuk melaporkan atau mengesahkan bahaya di kampus. Peta boleh dilihat oleh semua."
+            } else {
+                "Sign in to report or confirm campus hazards. The map is open to everyone."
+            }
+        )
 
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
-            label = { Text("UM email") },
-            supportingText = { Text("@siswa.um.edu.my or @um.edu.my") },
+            label = {
+                Text(if (isMalay) "E-mel UM" else "UM email")
+            },
+            supportingText = {
+                Text(
+                    if (isMalay) "@siswa.um.edu.my atau @um.edu.my"
+                    else "@siswa.um.edu.my or @um.edu.my"
+                )
+            },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             singleLine = true,
             enabled = !busy,
@@ -71,7 +144,9 @@ fun SignInScreen(onBack: () -> Unit) {
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Password") },
+            label = {
+                Text(if (isMalay) "Kata laluan" else "Password")
+            },
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             singleLine = true,
@@ -92,7 +167,7 @@ fun SignInScreen(onBack: () -> Unit) {
             enabled = canSubmit,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Sign in")
+            Text(if (isMalay) "Log masuk" else "Sign in")
         }
 
         OutlinedButton(
@@ -107,7 +182,7 @@ fun SignInScreen(onBack: () -> Unit) {
             enabled = canSubmit,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Create account")
+            Text(if (isMalay) "Buat akaun" else "Create account")
         }
 
         TextButton(
@@ -121,10 +196,29 @@ fun SignInScreen(onBack: () -> Unit) {
             },
             enabled = canSubmit
         ) {
-            Text("Resend verification")
+            Text(if (isMalay) "Hantar semula pengesahan" else "Resend verification")
         }
 
-        if (busy) Text("Please wait…")
-        if (message.isNotBlank()) Text(message)
+        TextButton(
+            onClick = {
+                busy = true
+                message = ""
+                UmAuth.resetPassword(email) { result ->
+                    busy = false
+                    message = result
+                }
+            },
+            enabled = !busy && email.isNotBlank()
+        ) {
+            Text(if (isMalay) "Lupa kata laluan?" else "Forgot password?")
+        }
+
+        if (busy) {
+            Text(if (isMalay) "Sila tunggu…" else "Please wait…")
+        }
+
+        if (message.isNotBlank()) {
+            Text(translateAuthMessage(message, isMalay))
+        }
     }
 }
