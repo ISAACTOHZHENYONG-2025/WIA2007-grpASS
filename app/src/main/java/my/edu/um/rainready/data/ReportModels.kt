@@ -2,6 +2,9 @@ package my.edu.um.rainready.data
 
 import android.graphics.Bitmap
 import com.google.firebase.Timestamp
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.tasks.await
+import my.edu.um.rainready.faceblur.FaceBlurProcessor
 
 enum class ReportCategory(val firestoreValue: String, val label: String) {
     FLOOD("flood", "Flood"),
@@ -41,11 +44,17 @@ fun interface PhotoBlurProcessor {
     suspend fun blurFaces(sourceBitmap: Bitmap): Result<Bitmap>
 }
 
-/**
- * Temporary placeholder until Chen Xi connects PR #7 ML Kit face blur.
- */
-object PlaceholderBlurProcessor : PhotoBlurProcessor {
+object MlKitPhotoBlurProcessor : PhotoBlurProcessor {
     override suspend fun blurFaces(sourceBitmap: Bitmap): Result<Bitmap> {
-        return Result.success(sourceBitmap)
+        val processor = FaceBlurProcessor()
+        return try {
+            Result.success(processor.process(sourceBitmap).await().bitmap)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            Result.failure(error)
+        } finally {
+            processor.close()
+        }
     }
 }

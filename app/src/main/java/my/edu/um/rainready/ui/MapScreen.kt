@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -59,7 +60,12 @@ import java.util.Date
  * @param clock the time now, in epoch milliseconds. Tests pass a fake clock.
  */
 @Composable
-fun MapScreen(state: MapState?, modifier: Modifier = Modifier, clock: () -> Long = System::currentTimeMillis) {
+fun MapScreen(
+    state: MapState?,
+    modifier: Modifier = Modifier,
+    clock: () -> Long = System::currentTimeMillis,
+    onReport: () -> Unit = {},
+) {
     val context = LocalContext.current
     val stale = rememberIsStale(state?.updatedAtMillis, clock)
     val map = remember {
@@ -88,7 +94,12 @@ fun MapScreen(state: MapState?, modifier: Modifier = Modifier, clock: () -> Long
                     stringResource(R.string.banner_offline_body, timeText(state.updatedAtMillis)),
                 )
             }
-            loadError?.let { InfoBanner(stringResource(R.string.map_load_failed_title), stringResource(R.string.map_load_failed_body)) }
+            loadError?.let {
+                InfoBanner(
+                    stringResource(R.string.map_load_failed_title),
+                    stringResource(R.string.map_load_failed_body),
+                )
+            }
         }
 
         Column(
@@ -107,6 +118,15 @@ fun MapScreen(state: MapState?, modifier: Modifier = Modifier, clock: () -> Long
                 )
             }
         }
+
+        ExtendedFloatingActionButton(
+            onClick = onReport,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 16.dp, bottom = 12.dp),
+        ) {
+            Text("Report")
+        }
     }
 }
 
@@ -122,7 +142,10 @@ private fun MapLifecycle(map: CampusMapView) {
                 Lifecycle.Event.ON_RESUME -> map.view.onResume()
                 Lifecycle.Event.ON_PAUSE -> map.view.onPause()
                 Lifecycle.Event.ON_STOP -> map.view.onStop()
-                Lifecycle.Event.ON_DESTROY -> { map.view.onDestroy(); destroyed = true }
+                Lifecycle.Event.ON_DESTROY -> {
+                    map.view.onDestroy()
+                    destroyed = true
+                }
                 else -> Unit
             }
         }
@@ -141,7 +164,8 @@ private fun MapLifecycle(map: CampusMapView) {
 }
 
 @Composable
-private fun timeText(millis: Long): String = DateFormat.getTimeFormat(LocalContext.current).format(Date(millis))
+private fun timeText(millis: Long): String =
+    DateFormat.getTimeFormat(LocalContext.current).format(Date(millis))
 
 @Composable
 private fun MapHeader(state: MapState?, showLegend: Boolean, onToggleLegend: () -> Unit) {
@@ -153,7 +177,10 @@ private fun MapHeader(state: MapState?, showLegend: Boolean, onToggleLegend: () 
             .fillMaxWidth()
             .height(56.dp),
     ) {
-        Row(Modifier.padding(start = 20.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.padding(start = 20.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Column(Modifier.weight(1f)) {
                 Text(
                     stringResource(R.string.map_title),
@@ -172,7 +199,9 @@ private fun MapHeader(state: MapState?, showLegend: Boolean, onToggleLegend: () 
             IconButton(onClick = onToggleLegend) {
                 Icon(
                     painterResource(R.drawable.ic_info),
-                    contentDescription = stringResource(if (showLegend) R.string.map_legend_hide else R.string.map_legend_show),
+                    contentDescription = stringResource(
+                        if (showLegend) R.string.map_legend_hide else R.string.map_legend_show
+                    ),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -188,7 +217,10 @@ private fun InfoBanner(title: String, body: String) {
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Column(
+            Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
             Text(title, style = MaterialTheme.typography.titleSmall)
             Text(body, style = MaterialTheme.typography.bodySmall)
         }
@@ -218,8 +250,16 @@ private fun MapLegend() {
 
 @Composable
 private fun LegendRow(word: String, symbol: @Composable () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Box(Modifier.size(width = 14.dp, height = 16.dp), contentAlignment = Alignment.Center) { symbol() }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(
+            Modifier.size(width = 14.dp, height = 16.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            symbol()
+        }
         Text(word, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface)
     }
 }
