@@ -77,6 +77,10 @@ private fun translateAuthMessage(message: String, isMalay: Boolean): String {
         "Check your email, password, and connection." ->
             "Semak e-mel, kata laluan dan sambungan anda."
 
+        "If an account exists, check your email for a password reset link." ->
+            "Jika akaun wujud, semak e-mel anda untuk pautan menetapkan semula kata laluan."
+        "Could not request a password reset. Check your connection and try again." ->
+            "Permintaan menetapkan semula kata laluan gagal. Semak sambungan dan cuba lagi."
         else -> message
     }
 }
@@ -193,6 +197,20 @@ fun SignInScreen(onBack: () -> Unit) {
             enabled = canSubmit
         ) {
             Text(if (isMalay) "Hantar semula pengesahan" else "Resend verification")
+        }
+
+        TextButton(
+            onClick = {
+                busy = true
+                message = ""
+                UmAuth.resetPassword(email) { result ->
+                    busy = false
+                    message = result
+                }
+            },
+            enabled = !busy && email.isNotBlank()
+        ) {
+            Text(if (isMalay) "Lupa kata laluan?" else "Forgot password?")
         }
 
         if (busy) {

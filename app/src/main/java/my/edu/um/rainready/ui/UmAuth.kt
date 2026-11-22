@@ -138,6 +138,21 @@ object UmAuth {
                 onResult("Check your email, password, and connection.")
             }
     }
+    fun resetPassword(email: String, onResult: (String) -> Unit) {
+        val cleanEmail = normalized(email)
+        if (!validEmail(cleanEmail)) {
+            onResult("Enter a valid UM email address.")
+            return
+        }
+        auth.sendPasswordResetEmail(cleanEmail).addOnCompleteListener { task ->
+            onResult(if (task.isSuccessful) {
+                "If an account exists, check your email for a password reset link."
+            } else {
+                "Could not request a password reset. Check your connection and try again."
+            })
+        }
+    }
+
     fun signOut() {
         auth.signOut()
     }
