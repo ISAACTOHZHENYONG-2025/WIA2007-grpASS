@@ -3,7 +3,7 @@
 Owner: Ker Li. Files: `.github/workflows/rain-warning.yml`, `robot/rain-logic.js`, `robot/rain-warning.js`, `robot/rain-logic.test.js`.
 
 ## Agreed rules
-Decided by Isaac on 20 Nov 2026: [LINK TO ISAAC'S DECISION / TEAM PLAN SECTION]
+Decided by Isaac: team plan section 6.2A "Rain-warning decisions (19 Nov 2026)" https://docs.google.com/document/d/19hqdpRRAfHQJw9O91C5fkT34Pw4ly6BHhCg_7B3ssis/edit?pli=1&tab=t.0#heading=h.ys47xm3loec4 and section 4 "Weather" (UM coordinate, 20 Nov). The overlapping-hours window and the warning wording were decided by Isaac in the team group chat on 20 Nov 2026.
 
 - Source: Open-Meteo hourly `precipitation` (mm). Each value is the sum of the **preceding** hour (the 15:00 value covers 14:00-15:00).
 - Location: one campus point, lat 3.1231, lon 101.6529 (UM map centre), reused for all zones.
@@ -11,12 +11,12 @@ Decided by Isaac on 20 Nov 2026: [LINK TO ISAAC'S DECISION / TEAM PLAN SECTION]
 - Topics: `rain_z1` to `rain_z10`.
 - Wording: "Heavy rain forecast around UM soon. Check conditions before travelling."
 - Schedule: every 15 minutes. GitHub may start scheduled runs late, and only runs them from `main`.
-- Cooldown: 60 minutes per zone, stored in `zoneWarningCooldowns/{zoneId}.lastWarningSentAt`, written only after FCM accepts the send.
+- Cooldown: 60 minutes per zone, stored in `zoneWarningCooldowns/{zoneId}.lastWarningSentAt`, written only after FCM accepts the send. Phones have read-only access (zy's rules), for Isaac's WorkManager backup check. Layout: `docs/DATA_LAYOUT.md` section 3.10.
 - Only one run at a time (workflow `concurrency` group `rain-warning`, `cancel-in-progress: false`).
 
 ## Operations
 - Secret: uses the repository secret `FIREBASE_SERVICE_ACCOUNT` (already used by `test-push`).
-- Who watches live runs: [NAME, agreed with the team]. GitHub emails failed scheduled runs to the person who last changed the cron schedule in the workflow file.
+- Who watches live runs: Isaac and Jingying (agreed in the PR #14 review). GitHub emails failed scheduled runs to the person who last changed the cron schedule in the workflow file.
 - Failed runs (red): forecast source down, missing forecast, or a zone that could not be sent or recorded.
 
 ## Known limitations (not blocking, from PR #14 review)
