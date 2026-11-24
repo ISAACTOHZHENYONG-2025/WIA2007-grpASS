@@ -1,12 +1,14 @@
 package my.edu.um.rainready
 
 import my.edu.um.rainready.data.ConfirmationRules
+import my.edu.um.rainready.data.ReportRepository
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Unit tests for FR3.2 Safe Report Confirmations (zy).
+ * Unit tests for FR3.2 Safe Report Confirmations & NFR2 GeoJSON bounds (zy).
  */
 class ConfirmationSafetyTest {
 
@@ -66,5 +68,26 @@ class ConfirmationSafetyTest {
             isStaff = false
         )
         assertTrue(result.isFailure)
+    }
+
+    @Test
+    fun confirmationOnStaleReport_overSixHours_isRejected() {
+        val result = ConfirmationRules.nextState(
+            currentCount = 1,
+            currentStatus = "unconfirmed",
+            alreadyConfirmedByUser = false,
+            isStaff = false,
+            isStale = true
+        )
+        assertTrue(result.isFailure)
+    }
+
+    @Test
+    fun campusBounds_includeKK13_andRejectOutsideUM() {
+        // KK13 (Z3) from Emmanuel_zones-draft_2026-11-10.geojson
+        assertTrue(3.11900 in ReportRepository.MIN_LAT..ReportRepository.MAX_LAT)
+        assertTrue(101.63868 in ReportRepository.MIN_LNG..ReportRepository.MAX_LNG)
+        // >200 m south of UM
+        assertFalse(3.1000 in ReportRepository.MIN_LAT..ReportRepository.MAX_LAT)
     }
 }
