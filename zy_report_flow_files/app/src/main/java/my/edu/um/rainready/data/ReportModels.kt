@@ -42,10 +42,13 @@ fun interface PhotoBlurProcessor {
 }
 
 /**
- * Temporary placeholder until Chen Xi connects PR #7 ML Kit face blur.
+ * Fail-closed default until Chen Xi connects PR #7 ML Kit face blur.
+ * Per PLAN 6.4, uploads MUST be blocked rather than sending unblurred images.
  */
-object PlaceholderBlurProcessor : PhotoBlurProcessor {
+object FailClosedBlurProcessor : PhotoBlurProcessor {
     override suspend fun blurFaces(sourceBitmap: Bitmap): Result<Bitmap> {
-        return Result.success(sourceBitmap)
+        return Result.failure(
+            IllegalStateException("Face blur is not connected yet (PR #7 required). Upload blocked to protect privacy.")
+        )
     }
 }
