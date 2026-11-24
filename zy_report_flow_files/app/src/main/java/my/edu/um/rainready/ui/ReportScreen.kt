@@ -1,9 +1,6 @@
 package my.edu.um.rainready.ui
 
-import android.graphics.ImageDecoder
-import android.net.Uri
-import android.os.Build
-import android.provider.MediaStore
+import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -39,28 +36,29 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import my.edu.um.rainready.data.FailClosedBlurProcessor
 import my.edu.um.rainready.data.PhotoBlurProcessor
-import my.edu.um.rainready.data.PlaceholderBlurProcessor
 import my.edu.um.rainready.data.PreparedReportPhoto
 import my.edu.um.rainready.data.ReportCategory
 import my.edu.um.rainready.data.ReportRepository
 
 /**
  * FR3.1 Report Screen (zy) with FR5.2 Face-Blur Hook (Chen Xi - PR #7).
- * - Displays blurred photo previews BEFORE upload.
- * - Blocks upload if face blur fails on any selected photo.
+ * - Uses live camera capture only (TakePicturePreview, no gallery picker per Plan 6.4).
+ * - Defaults to FailClosedBlurProcessor so unblurred photos can NEVER be uploaded.
+ * - Shows blurred photo previews BEFORE upload and blocks upload if blur or compression fails.
+ * - NOTE (temporary placeholder): manual lat/lng and zone selection will be replaced once
+ *   GPS location + point-in-polygon zone matching are wired up from zones.geojson.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ReportScreen(
     repository: ReportRepository = remember { ReportRepository() },
-    photoBlurProcessor: PhotoBlurProcessor = PlaceholderBlurProcessor,
+    photoBlurProcessor: PhotoBlurProcessor = FailClosedBlurProcessor,
     onReportSubmitted: (String) -> Unit = {}
 ) {
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     var selectedZone by remember { mutableStateOf("Z6") }
@@ -75,45 +73,41 @@ fun ReportScreen(
     var blurFailed by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
 
-    val imagePicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        if (uri == null || preparedPhotos.size >= 3) return@rememberLauncherForActivityResult
+    // Live camera capture only (no gallery uploads per Plan 6.4)
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { rawBitmap: Bitmap? ->
+        if (rawBitmap == null || preparedPhotos.size >= 3) return@rememberLauncherForActivityResult
         scope.launch {
             isProcessingPhoto = true
             blurFailed = false
             statusMessage = null
             try {
-                val rawBitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    val source = ImageDecoder.createSource(context.contentResolver, uri)
-                    ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
-                        decoder.isMutableRequired = true
-                    }
-                } else {
-                    @Suppress("DEPRECATION")
-                    MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
-                }
-
                 // FR5.2: Run face blur BEFORE showing preview or allowing upload
                 val blurResult = photoBlurProcessor.blurFaces(rawBitmap)
                 blurResult.onSuccess { blurredBitmap ->
-                    val (base64, w, h) = repository.encodeCompressedJpegBase64(blurredBitmap)
-                    preparedPhotos.add(
-                        PreparedReportPhoto(
-                            id = "p${preparedPhotos.size + 1}",
-                            blurredBitmap = blurredBitmap,
-                            imageBase64 = base64,
-                            widthPx = w,
-                            heightPx = h
+                    val encodedResult = repository.encodeCompressedJpegBase64(blurredBitmap)
+                    encodedResult.onSuccess { (base64, w, h) ->
+                        preparedPhotos.add(
+                            PreparedReportPhoto(
+                                id = "p${preparedPhotos.size + 1}",
+                                blurredBitmap = blurredBitmap,
+                                imageBase64 = base64,
+                                widthPx = w,
+                                heightPx = h
+                            )
                         )
-                    )
+                    }.onFailure { compErr ->
+                        blurFailed = true
+                        statusMessage = compErr.message ?: "Photo compression failed."
+                    }
                 }.onFailure { err ->
                     blurFailed = true
-                    statusMessage = "Upload blocked: face blur failed (${err.message ?: "unknown error"}). Please retake the photo."
+                    statusMessage = "Upload blocked: ${err.message ?: "face blur failed"}."
                 }
             } catch (e: Exception) {
                 blurFailed = true
-                statusMessage = "Could not load photo: ${e.message}"
+                statusMessage = "Could not process camera photo: ${e.message}"
             } finally {
                 isProcessingPhoto = false
             }
@@ -129,7 +123,7 @@ fun ReportScreen(
     ) {
         Text(text = "Report a Campus Hazard", style = MaterialTheme.typography.headlineSmall)
 
-        Text(text = "1. Zone (Z1–Z10)", style = MaterialTheme.typography.labelLarge)
+        Text(text = "1. Zone (Z1–Z10) [temporary manual picker until GPS + GeoJSON]", style = MaterialTheme.typography.labelLarge)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             (1..10).forEach { idx ->
                 val zone = "Z$idx"
@@ -163,24 +157,24 @@ fun ReportScreen(
             OutlinedTextField(
                 value = latText,
                 onValueChange = { latText = it },
-                label = { Text("Latitude") },
+                label = { Text("Latitude (temp)") },
                 modifier = Modifier.weight(1f)
             )
             OutlinedTextField(
                 value = lngText,
                 onValueChange = { lngText = it },
-                label = { Text("Longitude") },
+                label = { Text("Longitude (temp)") },
                 modifier = Modifier.weight(1f)
             )
         }
 
-        Text(text = "3. Live Photos (1–3, faces blurred before upload)", style = MaterialTheme.typography.labelLarge)
+        Text(text = "3. Live Camera Photos (1–3, faces blurred before upload)", style = MaterialTheme.typography.labelLarge)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(
-                onClick = { imagePicker.launch("image/*") },
+                onClick = { cameraLauncher.launch(null) },
                 enabled = !isProcessingPhoto && preparedPhotos.size < 3
             ) {
-                Text(if (isProcessingPhoto) "Blurring..." else "Add Photo (${preparedPhotos.size}/3)")
+                Text(if (isProcessingPhoto) "Blurring..." else "Take Live Photo (${preparedPhotos.size}/3)")
             }
             if (preparedPhotos.isNotEmpty()) {
                 OutlinedButton(onClick = {
