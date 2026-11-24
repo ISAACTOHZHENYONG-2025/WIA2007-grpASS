@@ -4,26 +4,36 @@ import android.content.Context
 import android.view.Gravity
 import androidx.compose.ui.graphics.toArgb
 import com.google.gson.JsonObject
+import my.edu.um.rainready.model.LonLat
 import my.edu.um.rainready.model.MapState
 import my.edu.um.rainready.model.ZoneStatus
 import my.edu.um.rainready.ui.components.style
+import my.edu.um.rainready.ui.theme.PinUnconfirmed
+import my.edu.um.rainready.ui.theme.Primary
 import my.edu.um.rainready.ui.theme.ZoneCautionOutline
 import my.edu.um.rainready.ui.theme.ZoneCaution
 import my.edu.um.rainready.ui.theme.ZoneClear
 import my.edu.um.rainready.ui.theme.ZoneFlooded
 import org.maplibre.android.camera.CameraPosition
+import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngBounds
 import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapLibreMapOptions
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression.eq
 import org.maplibre.android.style.expressions.Expression.get
 import org.maplibre.android.style.expressions.Expression.literal
+import org.maplibre.android.style.layers.CircleLayer
 import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.Layer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.Property
+import org.maplibre.android.style.layers.PropertyFactory.circleColor
+import org.maplibre.android.style.layers.PropertyFactory.circleRadius
+import org.maplibre.android.style.layers.PropertyFactory.circleStrokeColor
+import org.maplibre.android.style.layers.PropertyFactory.circleStrokeWidth
 import org.maplibre.android.style.layers.PropertyFactory.fillColor
 import org.maplibre.android.style.layers.PropertyFactory.fillOpacity
 import org.maplibre.android.style.layers.PropertyFactory.iconAllowOverlap
@@ -31,6 +41,7 @@ import org.maplibre.android.style.layers.PropertyFactory.iconAnchor
 import org.maplibre.android.style.layers.PropertyFactory.iconIgnorePlacement
 import org.maplibre.android.style.layers.PropertyFactory.iconImage
 import org.maplibre.android.style.layers.PropertyFactory.iconPadding
+import org.maplibre.android.style.layers.PropertyFactory.lineCap
 import org.maplibre.android.style.layers.PropertyFactory.lineColor
 import org.maplibre.android.style.layers.PropertyFactory.lineDasharray
 import org.maplibre.android.style.layers.PropertyFactory.lineJoin
@@ -40,31 +51,46 @@ import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
+import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
 
 /**
  * The campus map: OpenFreeMap "Liberty" tiles with our zones (colour + outline style + label with
- * symbol and word) and report pins on top. Owns one MapView; call [render] whenever the data changes.
+ * symbol and word) and report pins on top. Owns one MapView; call [render] whenever the data changes,
+ * and [showRoute] to highlight a route-check path.
+ *
+ * @param interactive false for a small map inside a scrolling screen: no panning or zooming, so the
+ *   page scrolls instead.
  */
-internal class CampusMapView(private val context: Context, zonesGeoJson: String) {
-    val view: MapView = MapView(context).apply { onCreate(null) }
+internal class CampusMapView(
+    private val context: Context,
+    zonesGeoJson: String,
+    private val interactive: Boolean = true,
+) {
+    // A small map inside a scrolling page draws on a TextureView, which scrolls with the page.
+    val view: MapView = MapView(context, MapLibreMapOptions.createFromAttributes(context).textureMode(!interactive))
+        .apply { onCreate(null) }
 
     /** Set when the style or tiles fail to load (no internet on first launch, for example). */
     var onLoadFailed: ((String) -> Unit)? = null
 
     private val zones: List<Feature> = FeatureCollection.fromJson(zonesGeoJson).features().orEmpty()
     private val images = MapImages(context)
+    private var map: MapLibreMap? = null
     private var style: Style? = null
     private var latest: MapState? = null
+    private var route: Pair<List<LonLat>?, List<List<LonLat>>>? = null
 
     init {
         view.addOnDidFailLoadingMapListener { message -> onLoadFailed?.invoke(message) }
         view.getMapAsync { map ->
+            this.map = map
             configure(map)
             map.setStyle(Style.Builder().fromUri(STYLE_URL)) { loaded ->
                 style = loaded
                 addLayers(loaded)
                 latest?.let { render(it) }
+                route?.let { (main, others) -> showRoute(main, others) }
             }
         }
     }
@@ -86,6 +112,35 @@ internal class CampusMapView(private val context: Context, zonesGeoJson: String)
             attributionGravity = Gravity.BOTTOM or Gravity.END
             val dp = context.resources.displayMetrics.density
             setAttributionMargins(0, 0, (12 * dp).toInt(), (12 * dp).toInt())
+            if (!interactive) {
+                isScrollGesturesEnabled = false
+                isZoomGesturesEnabled = false
+                isDoubleTapGesturesEnabled = false
+                isQuickZoomGesturesEnabled = false
+            }
+        }
+    }
+
+    /**
+     * Highlights a route: [main] as a solid blue line with a dot at each end, [others] as dashed grey
+     * lines (for example the usual path when a safer route is shown), and moves the camera to fit them.
+     * Pass null and an empty list to clear it. Safe to call before the style has loaded.
+     */
+    fun showRoute(main: List<LonLat>?, others: List<List<LonLat>>) {
+        route = main to others
+        val s = style ?: return
+        fun line(points: List<LonLat>) = Feature.fromGeometry(LineString.fromLngLats(points.map { Point.fromLngLat(it.lon, it.lat) }))
+        s.getSourceAs<GeoJsonSource>(SRC_ROUTE_MAIN)?.setGeoJson(FeatureCollection.fromFeatures(listOfNotNull(main?.let(::line))))
+        s.getSourceAs<GeoJsonSource>(SRC_ROUTE_OTHER)?.setGeoJson(FeatureCollection.fromFeatures(others.map(::line)))
+        val ends = (main ?: others.firstOrNull()).orEmpty().let { listOfNotNull(it.firstOrNull(), it.lastOrNull()) }
+        s.getSourceAs<GeoJsonSource>(SRC_ROUTE_ENDS)?.setGeoJson(
+            FeatureCollection.fromFeatures(ends.map { Feature.fromGeometry(Point.fromLngLat(it.lon, it.lat)) })
+        )
+        val all = listOfNotNull(main).flatten() + others.flatten()
+        if (all.size >= 2) {
+            val bounds = LatLngBounds.Builder().apply { all.forEach { include(LatLng(it.lat, it.lon)) } }.build()
+            val pad = (40 * context.resources.displayMetrics.density).toInt()
+            map?.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, pad))
         }
     }
 
@@ -116,7 +171,8 @@ internal class CampusMapView(private val context: Context, zonesGeoJson: String)
             labelFeatures += Feature.fromGeometry(Point.fromLngLat(lon, lat), label)
         }
         s.getSourceAs<GeoJsonSource>(SRC_ZONES)?.setGeoJson(FeatureCollection.fromFeatures(zoneFeatures))
-        s.getSourceAs<GeoJsonSource>(SRC_LABELS)?.setGeoJson(FeatureCollection.fromFeatures(labelFeatures))
+        // The small route map is too small for the name tags; colour and outline still show each status.
+        s.getSourceAs<GeoJsonSource>(SRC_LABELS)?.setGeoJson(FeatureCollection.fromFeatures(if (interactive) labelFeatures else emptyList()))
 
         val pins = state.reports.map { r ->
             val props = JsonObject().apply { addProperty("image", if (r.confirmed) PIN_CONFIRMED else PIN_UNCONFIRMED) }
@@ -137,6 +193,25 @@ internal class CampusMapView(private val context: Context, zonesGeoJson: String)
         for (layer in zoneLayers()) {
             if (firstSymbol != null) s.addLayerBelow(layer, firstSymbol) else s.addLayer(layer)
         }
+        // A route-check path goes over the streets but under our zone labels and pins.
+        s.addSource(GeoJsonSource(SRC_ROUTE_OTHER))
+        s.addSource(GeoJsonSource(SRC_ROUTE_MAIN))
+        s.addSource(GeoJsonSource(SRC_ROUTE_ENDS))
+        s.addLayer(
+            LineLayer("rr-route-other", SRC_ROUTE_OTHER).withProperties(
+                lineColor(PinUnconfirmed.toArgb()), lineWidth(4f), lineDasharray(arrayOf(1.2f, 1.2f)),
+            )
+        )
+        s.addLayer(
+            LineLayer("rr-route-main", SRC_ROUTE_MAIN).withProperties(
+                lineColor(Primary.toArgb()), lineWidth(5f), lineCap(Property.LINE_CAP_ROUND), lineJoin(Property.LINE_JOIN_ROUND),
+            )
+        )
+        s.addLayer(
+            CircleLayer("rr-route-ends", SRC_ROUTE_ENDS).withProperties(
+                circleRadius(6f), circleColor(Primary.toArgb()), circleStrokeColor(android.graphics.Color.WHITE), circleStrokeWidth(2.5f),
+            )
+        )
         // Zone labels and pins go on top of everything.
         s.addLayer(
             SymbolLayer(LAYER_LABELS, SRC_LABELS).withProperties(
@@ -193,6 +268,9 @@ internal class CampusMapView(private val context: Context, zonesGeoJson: String)
         private const val SRC_ZONES = "rr-zones"
         private const val SRC_LABELS = "rr-zone-labels"
         private const val SRC_PINS = "rr-pins"
+        private const val SRC_ROUTE_MAIN = "rr-route-main"
+        private const val SRC_ROUTE_OTHER = "rr-route-other"
+        private const val SRC_ROUTE_ENDS = "rr-route-ends"
         private const val LAYER_LABELS = "rr-layer-zone-labels"
         private const val LAYER_PINS = "rr-layer-pins"
         private const val PIN_CONFIRMED = "pin-confirmed"

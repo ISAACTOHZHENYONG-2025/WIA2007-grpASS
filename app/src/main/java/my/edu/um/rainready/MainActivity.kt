@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
@@ -85,7 +86,10 @@ class MainActivity : ComponentActivity() {
 
             CompositionLocalProvider(
                 LocalContext provides localizedContext,
-                LocalConfiguration provides localizedConfiguration
+                LocalConfiguration provides localizedConfiguration,
+                // The translated context is not the activity, so screens that ask for a permission
+                // (location for the route check, camera for reports) need the activity named here.
+                LocalActivityResultRegistryOwner provides this@MainActivity,
             ) {
                 RainReadyTheme {
                     RainReadyApp()
