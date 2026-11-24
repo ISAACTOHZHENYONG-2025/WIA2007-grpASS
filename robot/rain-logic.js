@@ -9,6 +9,13 @@
 //  - One campus forecast, reused for all zones Z1-Z10. Topics rain_z1 ... rain_z10.
 //  - 60-minute cooldown per zone, using zoneWarningCooldowns/{zoneId}.lastWarningSentAt,
 //    updated only after a successful FCM send.
+//
+// Dedupe design (team decision, led by Jingying, 24 Nov 2026):
+//  - eventId = 'rain_' + end time (unix seconds, UTC) of the EARLIEST hourly interval in the
+//    next 60 minutes with mm > 15. Campus-wide: no zoneId in it.
+//  - The robot sends a DATA-ONLY message (no notification block). The app shows the
+//    notification itself with tag 'rain_warning' and ID 2001, so the phone backup and the
+//    robot replace each other instead of showing two alerts.
 
 const THRESHOLD_MM = 15;
 const HOUR_MS = 60 * 60 * 1000;
@@ -47,18 +54,43 @@ function isValidMm(v) {
   return typeof v === 'number' && Number.isFinite(v) && v >= 0;
 }
 
-// Returns { decision: 'warn' | 'no_warning' | 'missing', maxMm, intervals, partial }
+// eventId for the warning: earliest-ending interval with mm > 15, or null if none.
+function eventIdFor(validIntervals) {
+  const triggering = validIntervals.filter((x) => x.mm > THRESHOLD_MM);
+  if (triggering.length === 0) return null;
+  const earliestEnd = Math.min(...triggering.map((x) => x.endMs));
+  return 'rain_' + Math.floor(earliestEnd / 1000);
+}
+
+// The FCM message for one zone topic (data-only; the app posts the notification).
+// FCM data values must be strings.
+function buildMessage(topic, zoneId, eventId) {
+  return {
+    topic,
+    data: {
+      type: 'rain_warning',
+      eventId: String(eventId),
+      zoneId: String(zoneId),
+      title: WARNING_TITLE,
+      body: WARNING_BODY,
+    },
+    android: { priority: 'high' },
+  };
+}
+
+// Returns { decision: 'warn' | 'no_warning' | 'missing', maxMm, eventId, intervals, partial }
 function decideForecast(hourly, nowMs) {
   const intervals = relevantIntervals(hourly, nowMs);
   const valid = intervals.filter((x) => isValidMm(x.mm));
   const expected = nowMs % HOUR_MS === 0 ? 1 : 2;
   if (valid.length === 0) {
-    return { decision: 'missing', maxMm: null, intervals, partial: false };
+    return { decision: 'missing', maxMm: null, eventId: null, intervals, partial: false };
   }
   const maxMm = Math.max(...valid.map((x) => x.mm));
   return {
     decision: maxMm > THRESHOLD_MM ? 'warn' : 'no_warning',
     maxMm,
+    eventId: eventIdFor(valid),
     intervals,
     partial: valid.length < expected, // some overlapping hour had no usable value
   };
@@ -72,7 +104,7 @@ function inCooldown(lastSentMs, nowMs) {
 // deps:
 //   getForecast()            -> hourly object (may throw = source failure)
 //   getLastSentMs(zoneId)    -> number (ms) or null (may throw)
-//   sendToTopic(topic, zone) -> resolves on FCM success (may throw)
+//   sendToTopic(topic, zone, eventId) -> resolves on FCM success (may throw)
 //   markSent(zoneId)         -> writes lastWarningSentAt (may throw)
 //   nowMs, log
 //   testTopic (optional)     -> send ONE message to this topic, no cooldown read/write
@@ -109,7 +141,7 @@ async function runRainWarning(deps) {
     return result;
   }
 
-  log(`Max ${f.maxMm} mm is above ${THRESHOLD_MM} mm. Warning condition met.`);
+  log(`Max ${f.maxMm} mm is above ${THRESHOLD_MM} mm. Warning condition met. eventId ${f.eventId}`);
 
   if (deps.testTopic) {
     if (deps.dryRun) {
@@ -118,7 +150,7 @@ async function runRainWarning(deps) {
       return result;
     }
     try {
-      await sendToTopic(deps.testTopic, 'TEST');
+      await sendToTopic(deps.testTopic, 'TEST', f.eventId);
       result.sent.push(deps.testTopic);
       log(`TEST MODE: sent to topic ${deps.testTopic}. Cooldowns not read or written.`);
       result.status = 'warned_test';
@@ -152,7 +184,7 @@ async function runRainWarning(deps) {
       continue;
     }
     try {
-      await sendToTopic(topic, zone);
+      await sendToTopic(topic, zone, f.eventId);
     } catch (e) {
       log(`${zone}: FCM send failed (${e.message}). Cooldown NOT updated.`);
       result.failed.push({ zone, reason: 'send failed' });
@@ -177,5 +209,5 @@ async function runRainWarning(deps) {
 
 module.exports = {
   THRESHOLD_MM, HOUR_MS, COOLDOWN_MS, ZONES, WARNING_TITLE, WARNING_BODY,
-  topicForZone, myt, relevantIntervals, decideForecast, inCooldown, runRainWarning,
+  topicForZone, myt, relevantIntervals, eventIdFor, buildMessage, decideForecast, inCooldown, runRainWarning,
 };

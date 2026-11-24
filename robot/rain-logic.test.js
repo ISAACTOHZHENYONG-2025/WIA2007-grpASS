@@ -22,16 +22,17 @@ const E14 = HOUR_START, E15 = HOUR_START + H, E16 = HOUR_START + 2 * H, E17 = HO
 // Fake Firebase: records every send and cooldown write.
 function fakes({ last = {}, failSend = [], failRead = [], failMark = [], forecast, forecastError } = {}) {
   const sends = [];
+  const sentIds = [];
   const marks = [];
   const store = { ...last };
   return {
-    sends, marks, store,
+    sends, sentIds, marks, store,
     deps: {
       nowMs: NOW,
       log: () => {},
       getForecast: async () => { if (forecastError) throw new Error(forecastError); return forecast; },
       getLastSentMs: async (z) => { if (failRead.includes(z)) throw new Error('read error'); return store[z] ?? null; },
-      sendToTopic: async (topic, z) => { if (failSend.includes(z)) throw new Error('fcm error'); sends.push(topic); },
+      sendToTopic: async (topic, z, eventId) => { if (failSend.includes(z)) throw new Error('fcm error'); sends.push(topic); sentIds.push(eventId); },
       markSent: async (z) => { if (failMark.includes(z)) throw new Error('write error'); marks.push(z); store[z] = NOW; },
     },
   };
@@ -161,4 +162,64 @@ test('RW-13 dry run: decides but sends and writes nothing', async () => {
   assert.equal(r.status, 'dry_run');
   assert.equal(f.sends.length, 0);
   assert.equal(f.marks.length, 0);
+});
+
+// ---------- eventId (team dedupe design, 24 Nov) ----------
+const sec = (ms) => Math.floor(ms / 1000);
+
+test('EV-01 two intervals above 15: eventId uses the EARLIEST end', () => {
+  const f = L.decideForecast(hourly([E15, E16], [20, 30]), NOW); // 14:20
+  assert.equal(f.eventId, 'rain_' + sec(E15));
+});
+
+test('EV-01b only the later interval above 15: eventId uses that one', () => {
+  const f = L.decideForecast(hourly([E15, E16], [5, 30]), NOW);
+  assert.equal(f.eventId, 'rain_' + sec(E16));
+});
+
+test('EV-02 exact hour 14:00: just-ended interval (13:00-14:00, 30 mm) is excluded', () => {
+  const f = L.decideForecast(hourly([E14, E15], [30, 20]), HOUR_START);
+  assert.equal(f.eventId, 'rain_' + sec(E15));
+});
+
+test('EV-03 same interval at 14:20 and 14:35: same eventId', () => {
+  const data = hourly([E15, E16], [20, 0]);
+  const a = L.decideForecast(data, NOW);
+  const b = L.decideForecast(data, NOW + 15 * MIN);
+  assert.equal(a.eventId, b.eventId);
+});
+
+test('EV-04 next hour (run at 15:05, rain now 15:00-16:00): different eventId', () => {
+  const a = L.decideForecast(hourly([E15, E16], [20, 0]), NOW); // 14:20
+  const b = L.decideForecast(hourly([E16, E17], [20, 0]), HOUR_START + H + 5 * MIN); // 15:05
+  assert.notEqual(a.eventId, b.eventId);
+  assert.equal(b.eventId, 'rain_' + sec(E16));
+});
+
+test('EV-05 no warning: eventId is null', () => {
+  assert.equal(L.decideForecast(hourly([E15, E16], [15, 10]), NOW).eventId, null);
+  assert.equal(L.decideForecast({}, NOW).eventId, null);
+});
+
+test('EV-06 campus-wide: all 10 zones get the same eventId, with no zone in it', async () => {
+  const f = fakes({ forecast: hourly([E15, E16], [20, 20]) });
+  await L.runRainWarning(f.deps);
+  assert.equal(f.sentIds.length, 10);
+  assert.equal(new Set(f.sentIds).size, 1);
+  assert.match(f.sentIds[0], /^rain_\d+$/);
+});
+
+test('EV-07 payload: data-only, eventId and zoneId as strings, high priority, no notification block', () => {
+  const m = L.buildMessage('rain_z6', 'Z6', 'rain_' + sec(E15));
+  assert.equal(m.topic, 'rain_z6');
+  assert.equal(m.notification, undefined);
+  assert.equal(m.android.priority, 'high');
+  assert.deepEqual(m.data, {
+    type: 'rain_warning',
+    eventId: 'rain_' + sec(E15),
+    zoneId: 'Z6',
+    title: L.WARNING_TITLE,
+    body: L.WARNING_BODY,
+  });
+  for (const v of Object.values(m.data)) assert.equal(typeof v, 'string');
 });

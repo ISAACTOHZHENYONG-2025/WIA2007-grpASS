@@ -97,12 +97,9 @@ async function main() {
       const ts = snap.get('lastWarningSentAt');
       return ts && typeof ts.toMillis === 'function' ? ts.toMillis() : null;
     },
-    sendToTopic: async (topic, zoneId) => {
-      await messaging.send({
-        topic,
-        notification: { title: logic.WARNING_TITLE, body: logic.WARNING_BODY },
-        data: { type: 'rain_warning', zoneId },
-      });
+    sendToTopic: async (topic, zoneId, eventId) => {
+      // Data-only message: the app shows it with tag 'rain_warning' + ID 2001 (team dedupe design).
+      await messaging.send(logic.buildMessage(topic, zoneId, eventId));
     },
     markSent: async (zoneId) => {
       await db.collection('zoneWarningCooldowns').doc(zoneId).set(
