@@ -18,6 +18,7 @@
     <string name="home_route_body">Pick the building you are going to. We check every path against live reports.</string>
     <string name="home_choose_building">Choose a building</string>
     <string name="home_your_zones">Your zones</string>
+    <string name="home_no_zone_data">No reports yet for the zones you follow.</string>
     <string name="home_colour_legend">What do the colours mean?</string>
 
     <plurals name="banner_flooded_title">
@@ -46,6 +47,45 @@
     <string name="map_load_failed_title">The map could not load</string>
     <string name="map_load_failed_body">Check your connection. Zone colours still show on the Home screen.</string>
 
-    <!-- Route check (week 4) -->
-    <string name="route_check_placeholder">The building picker and route verdicts are built in week 4.</string>
+    <!-- Route check (FR2.3). The verdict wording is a draft until Isaac and Chen Xi approve it. -->
+    <string name="language_code">en</string>
+    <string name="route_search">Search buildings</string>
+    <string name="route_from_location">From your location, near %s</string>
+    <string name="route_from_building">From %s</string>
+    <string name="route_change_start">Change</string>
+    <string name="route_finding_location">Finding your location…</string>
+    <string name="route_location_off">Location is off or you are off campus. Choose where you are starting from.</string>
+    <string name="route_pick_start_title">Where are you starting from?</string>
+    <string name="route_choose_start">Choose your start</string>
+    <string name="route_buildings">Buildings</string>
+    <string name="route_usual_walk">Usual walk %d min</string>
+    <string name="route_only_checked">Only buildings with a checked path from your start are listed.</string>
+    <string name="route_no_paths_from">No checked paths start at %s yet. Choose another start.</string>
+    <string name="route_no_results">No building matches \"%s\".</string>
+    <string name="route_no_path">No checked path joins these two buildings yet.</string>
+    <string name="verdict_go_title">Go.</string>
+    <string name="verdict_go_body">Your usual path to %1$s has no problems reported. About %2$d min walk.</string>
+    <string name="verdict_care_title">Go, take care.</string>
+    <string name="verdict_care_body">Caution is reported in %1$s along your usual path. About %2$d min walk.</string>
+    <string name="verdict_leave_early">Heavy rain is forecast on low ground along your path. Leave 10 minutes early.</string>
+    <string name="verdict_safer_title">Use safer route</string>
+    <string name="verdict_safer_body">Your usual path crosses %s, which is flooded. Take the highlighted path instead.</string>
+    <string name="verdict_safer_minutes">+%1$d min · %2$d min walk</string>
+    <string name="verdict_none_title">No safe route reported</string>
+    <string name="verdict_none_body">Every path to this building crosses a flooded zone. Wait, or check official notices.</string>
+    <string name="verdict_cause_flooded">Flooding reported in %s</string>
+    <string name="verdict_based_on">Based on current reports, updated %s</string>
+    <string name="category_flood">Flood</string>
+    <string name="category_fallen_tree">Fallen tree</string>
+    <string name="category_blocked_drain">Blocked drain</string>
+    <string name="route_show_on_map">Show on map</string>
+    <string name="route_check_another">Check another</string>
+    <string name="route_disclaimer">The route check uses student reports and UM staff notices. Always follow official instructions on the day.</string>
+    <string name="map_route_to">Route to %s</string>
+    <string name="map_route_clear">Clear route</string>
+    <!-- %1$s = what was reported, %2$d = people, %3$s = zone name -->
+    <plurals name="verdict_cause_report">
+        <item quantity="one">%1$s confirmed by %2$d person in %3$s</item>
+        <item quantity="other">%1$s confirmed by %2$d people in %3$s</item>
+    </plurals>
 </resources>
