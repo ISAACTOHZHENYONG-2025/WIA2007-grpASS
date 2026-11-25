@@ -1,19 +1,244 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // This rule allows anyone with your Firestore database reference to view, edit,
-    // and delete all data in your Firestore database. It is useful for getting
-    // started, but it is configured to expire after 30 days because it
-    // leaves your app open to attackers. At that time, all client
-    // requests to your Firestore database will be denied.
-    //
-    // Make sure to write security rules for your app before that time, or else
-    // all client requests to your Firestore database will be denied until you Update
-    // your rules
-    match /{document=**} {
-      allow read, write: if request.time < timestamp.date(2026, 12, 6);
+    // =========================================================================
+    // 1. HELPER FUNCTIONS (Auth, UM Domain, Staff Role, Geofence, Zone IDs)
+    // =========================================================================
+
+    function isSignedInUM() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email != null
+        && (request.auth.token.email.matches('.*@siswa\\.um\\.edu\\.my$')
+            || request.auth.token.email.matches('.*@um\\.edu\\.my$'));
+    }
+
+    function isStaff() {
+      return isSignedInUM()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isValidZoneId(zoneId) {
+      return zoneId is string
+        && zoneId in ['Z1', 'Z2', 'Z3', 'Z4', 'Z5', 'Z6', 'Z7', 'Z8', 'Z9', 'Z10'];
+    }
+
+    // NFR2 Geofence computed from Emmanuel_zones-draft_2026-11-10.geojson + 100 m buffer:
+    // Exact GeoJSON: lat [3.11284, 3.13470], lng [101.63742, 101.66418] (includes Z3 / KK13 at 101.63868)
+    function isInsideUM(lat, lng) {
+      return lat is number && lng is number
+        && lat >= 3.1119 && lat <= 3.1356
+        && lng >= 101.6365 && lng <= 101.6651;
+    }
+
+    function isReporter(reportId) {
+      return isSignedInUM()
+        && exists(/databases/$(database)/documents/reports_private/$(reportId))
+        && get(/databases/$(database)/documents/reports_private/$(reportId)).data.createdBy == request.auth.uid;
+    }
+
+    // =========================================================================
+    // 2. ZONES COLLECTION (DATA_LAYOUT.md Section 3.1)
+    // =========================================================================
+    match /zones/{zoneId} {
+      allow read: if true;
+
+      allow create, update: if isStaff()
+        && isValidZoneId(zoneId)
+        && request.resource.data.zoneId == zoneId
+        && (request.resource.data.staffOverride == null
+            || request.resource.data.staffOverride in ['', 'green', 'yellow', 'red']);
+
+      allow delete: if isStaff();
+    }
+
+    // =========================================================================
+    // 3. REPORTS COLLECTION & SUBCOLLECTIONS (DATA_LAYOUT.md Sections 3.2, 3.4-3.6)
+    // =========================================================================
+    match /reports/{reportId} {
+      allow read: if true;
+
+      // FR3.1 & NFR2: Create a new report using serverTimestamp() (request.time)
+      allow create: if isSignedInUM()
+        && request.resource.data.reportId == reportId
+        && isValidZoneId(request.resource.data.zoneId)
+        && request.resource.data.category in ['flood', 'fallen tree', 'blocked drain']
+        && (!('note' in request.resource.data)
+            || (request.resource.data.note is string && request.resource.data.note.size() <= 300))
+        && isInsideUM(request.resource.data.lat, request.resource.data.lng)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.confirmCount == 1
+        && (!('photoCount' in request.resource.data)
+            || (request.resource.data.photoCount is number
+                && request.resource.data.photoCount >= 1
+                && request.resource.data.photoCount <= 3))
+        && (!('flagCount' in request.resource.data) || request.resource.data.flagCount == 0)
+        && (!('fixedAt' in request.resource.data)
+            || request.resource.data.fixedAt == ''
+            || request.resource.data.fixedAt == null)
+        && (request.resource.data.status == 'unconfirmed'
+            || (isStaff() && request.resource.data.status == 'confirmed'))
+        && !('createdBy' in request.resource.data)
+        && !('reporterEmail' in request.resource.data)
+        && !('imageBase64' in request.resource.data);
+
+      // FR3.2 & FR3.3: Update report
+      allow update: if
+        // Case A: Staff can mark confirmed/fixed, set fixedAt, or clear flagCount
+        (isStaff()
+          && request.resource.data.reportId == resource.data.reportId
+          && request.resource.data.zoneId == resource.data.zoneId
+          && request.resource.data.category == resource.data.category
+          && request.resource.data.lat == resource.data.lat
+          && request.resource.data.lng == resource.data.lng
+          && request.resource.data.status in ['unconfirmed', 'confirmed', 'fixed'])
+        ||
+        // Case B: Student confirmation transaction (+1 confirmCount, blocks fixed & stale >6h reports)
+        (isSignedInUM()
+          && resource.data.status != 'fixed'
+          && request.time < resource.data.createdAt + duration.value(6, 'h')
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['confirmCount', 'status'])
+          && request.resource.data.confirmCount == resource.data.confirmCount + 1
+          && !exists(/databases/$(database)/documents/reports/$(reportId)/confirmations/$(request.auth.uid))
+          && existsAfter(/databases/$(database)/documents/reports/$(reportId)/confirmations/$(request.auth.uid))
+          && (
+            (request.resource.data.confirmCount >= 3 && resource.data.status == 'unconfirmed'
+              && request.resource.data.status == 'confirmed')
+            ||
+            (request.resource.data.confirmCount < 3
+              && request.resource.data.status == resource.data.status)
+            ||
+            (resource.data.status == 'confirmed'
+              && request.resource.data.status == 'confirmed')
+          ))
+        ||
+        // Case C: Student photo-flag transaction (+1 flagCount)
+        (isSignedInUM()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['flagCount'])
+          && request.resource.data.flagCount == resource.data.flagCount + 1
+          && !exists(/databases/$(database)/documents/reports/$(reportId)/flags/$(request.auth.uid))
+          && existsAfter(/databases/$(database)/documents/reports/$(reportId)/flags/$(request.auth.uid)));
+
+      allow delete: if isStaff() || isReporter(reportId);
+
+      // 3a. PHOTOS SUBCOLLECTION (signed-in UM users only)
+      match /photos/{photoId} {
+        allow read: if isSignedInUM();
+
+        allow create: if isSignedInUM()
+          && photoId in ['p1', 'p2', 'p3']
+          && request.resource.data.photoId == photoId
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.imageBase64 is string
+          && request.resource.data.imageBase64.size() > 0
+          && request.resource.data.imageBase64.size() <= 150000
+          && request.resource.data.widthPx is number
+          && request.resource.data.widthPx <= 800
+          && request.resource.data.heightPx is number
+          && request.resource.data.heightPx <= 800
+          && (
+            isReporter(reportId)
+            || (existsAfter(/databases/$(database)/documents/reports_private/$(reportId))
+                && getAfter(/databases/$(database)/documents/reports_private/$(reportId)).data.createdBy == request.auth.uid)
+          );
+
+        allow update: if false;
+        allow delete: if isStaff()
+          || (isReporter(reportId)
+              && !existsAfter(/databases/$(database)/documents/reports/$(reportId)));
+      }
+
+      // 3b. CONFIRMATIONS SUBCOLLECTION (1 vote per UID; cannot delete vote while report exists)
+      match /confirmations/{userId} {
+        allow read: if true;
+
+        allow create: if isSignedInUM()
+          && request.auth.uid == userId
+          && request.resource.data.userId == userId
+          && request.resource.data.createdAt == request.time
+          && !exists(/databases/$(database)/documents/reports/$(reportId)/confirmations/$(userId));
+
+        allow update: if false;
+        // Reporter may only delete confirmations inside the atomic batch that deletes the parent report
+        allow delete: if isStaff()
+          || (isReporter(reportId)
+              && !existsAfter(/databases/$(database)/documents/reports/$(reportId)));
+      }
+
+      // 3c. FLAGS SUBCOLLECTION (1 flag vote per student)
+      match /flags/{userId} {
+        allow read: if isSignedInUM();
+
+        allow create: if isSignedInUM()
+          && request.auth.uid == userId
+          && request.resource.data.userId == userId
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.reason in ['face visible', 'wrong place', 'spam']
+          && !exists(/databases/$(database)/documents/reports/$(reportId)/flags/$(userId));
+
+        allow update: if false;
+        allow delete: if isStaff()
+          || (isReporter(reportId)
+              && !existsAfter(/databases/$(database)/documents/reports/$(reportId)));
+      }
+    }
+
+    // =========================================================================
+    // 4. REPORTS_PRIVATE COLLECTION (DATA_LAYOUT.md Section 3.3)
+    // =========================================================================
+    match /reports_private/{reportId} {
+      allow read: if isStaff()
+        || (isSignedInUM() && resource.data.createdBy == request.auth.uid);
+
+      allow create: if isSignedInUM()
+        && request.resource.data.reportId == reportId
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.reporterEmail == request.auth.token.email
+        && request.resource.data.createdAt == request.time;
+
+      allow update: if false;
+
+      allow delete: if isStaff()
+        || (isSignedInUM() && resource.data.createdBy == request.auth.uid);
+    }
+
+    // =========================================================================
+    // 5. NOTICES COLLECTION (DATA_LAYOUT.md Section 3.7)
+    // =========================================================================
+    match /notices/{noticeId} {
+      allow read: if true;
+
+      allow create, update: if isStaff()
+        && request.resource.data.noticeId == noticeId
+        && request.resource.data.textEn is string
+        && request.resource.data.textEn.size() > 0;
+
+      allow delete: if isStaff();
+    }
+
+    // =========================================================================
+    // 6. ADMINS COLLECTION (DATA_LAYOUT.md Section 3.8)
+    // =========================================================================
+    match /admins/{uid} {
+      allow read: if isSignedInUM();
+      allow write: if false;
+    }
+
+    // =========================================================================
+    // 7. STATS COLLECTION (DATA_LAYOUT.md Section 3.9)
+    // =========================================================================
+    match /stats/{statId} {
+      allow read: if true;
+      allow write: if isStaff();
+    }
+
+    // =========================================================================
+    // 8. ZONE WARNING COOLDOWNS COLLECTION (DATA_LAYOUT.md Section 3.10)
+    // =========================================================================
+    match /zoneWarningCooldowns/{zoneId} {
+      allow read: if isValidZoneId(zoneId);
+      allow write: if false;
     }
   }
 }
