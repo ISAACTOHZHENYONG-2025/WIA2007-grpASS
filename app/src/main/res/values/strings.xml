@@ -35,6 +35,10 @@
     <string name="banner_updated">Last updated %s</string>
     <string name="banner_offline_title">Can\'t get new reports</string>
     <string name="banner_offline_body">Showing data from %s. Check your connection.</string>
+    <!-- Home weather line from the live Open-Meteo forecast (one campus point, next 60 minutes) -->
+    <string name="weather_rain_next_hour">About %1$.1f mm of rain forecast in the next hour</string>
+    <string name="weather_dry_next_hour">No rain forecast in the next hour</string>
+    <string name="weather_unknown">Rain forecast not available right now</string>
 
     <!-- Map -->
     <string name="map_title">Campus map</string>

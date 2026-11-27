@@ -34,6 +34,9 @@
     <string name="banner_updated">Dikemas kini pada %s</string>
     <string name="banner_offline_title">Tidak dapat menerima laporan baharu</string>
     <string name="banner_offline_body">Memaparkan data dari %s. Semak sambungan anda.</string>
+    <string name="weather_rain_next_hour">Kira-kira %1$.1f mm hujan diramalkan dalam sejam lagi</string>
+    <string name="weather_dry_next_hour">Tiada hujan diramalkan dalam sejam lagi</string>
+    <string name="weather_unknown">Ramalan hujan tidak tersedia buat masa ini</string>
 
     <!-- Map -->
     <string name="map_title">Peta kampus</string>

@@ -171,8 +171,10 @@ internal fun MapLifecycle(map: CampusMapView) {
     }
 }
 
+/** The time of day for [millis], or a dash when the live data has never come through (0). */
 @Composable
-internal fun timeText(millis: Long): String = DateFormat.getTimeFormat(LocalContext.current).format(Date(millis))
+internal fun timeText(millis: Long): String =
+    if (millis <= 0L) "—" else DateFormat.getTimeFormat(LocalContext.current).format(Date(millis))
 
 @Composable
 private fun MapHeader(state: MapState?, showLegend: Boolean, onToggleLegend: () -> Unit) {

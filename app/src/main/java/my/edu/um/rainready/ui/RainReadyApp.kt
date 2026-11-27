@@ -16,6 +16,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -27,6 +28,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.firestore.FirebaseFirestore
+import my.edu.um.rainready.BuildConfig
 import my.edu.um.rainready.R
 import my.edu.um.rainready.data.CampusData
 import my.edu.um.rainready.data.HomeRepository
@@ -61,12 +64,17 @@ fun RainReadyApp(
 ) {
     val context = LocalContext.current
     val campus = remember { CampusData.load(context) }
-    // One zone feed for Home, the map and the route check: Jingying's zone colour rules run over
-    // the sample inputs until the live reports and weather are connected.
-    val zones = remember { ZoneRulesRepository.sample(campus) }
+    val scope = rememberCoroutineScope()
+    // One zone feed for Home, the map and the route check: Jingying's zone colour rules run over the
+    // live reports and staff overrides (Firestore) and the rain forecast (Open-Meteo). Demo builds made
+    // with -Prainready.sampleData=true use the sample inputs instead.
+    val zones = remember {
+        if (BuildConfig.SAMPLE_DATA) ZoneRulesRepository.sample(campus)
+        else ZoneRulesRepository.live(campus, FirebaseFirestore.getInstance(), scope)
+    }
     val home = homeRepository ?: zones
     val map = mapRepository ?: zones
-    // The stand-in route checker follows the same map data, until Jingying's engine is connected.
+    // The route checker follows the same map data, so a new report changes the verdict by itself.
     val checker = routeChecker ?: remember(map) { SampleRouteChecker(campus, map.map) }
     // A route from "Show on map", highlighted on the Map tab until the user clears it.
     var mapRoute by remember { mutableStateOf<MapRoute?>(null) }

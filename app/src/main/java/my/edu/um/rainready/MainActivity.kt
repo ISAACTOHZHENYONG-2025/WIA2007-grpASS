@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import my.edu.um.rainready.data.FirestoreSetup
 import my.edu.um.rainready.ui.RainReadyApp
 import my.edu.um.rainready.ui.theme.RainReadyTheme
 import org.maplibre.android.MapLibre
@@ -29,6 +30,8 @@ class MainActivity : ComponentActivity() {
 
         // Must run before any MapView is created.
         MapLibre.getInstance(applicationContext)
+        // Test builds made with -Prainready.firestoreEmulator=127.0.0.1 read a local Firestore emulator.
+        FirestoreSetup.useEmulatorIfAsked()
 
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(
