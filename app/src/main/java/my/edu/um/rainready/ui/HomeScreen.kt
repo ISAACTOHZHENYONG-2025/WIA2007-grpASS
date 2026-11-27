@@ -133,7 +133,11 @@ fun HomeScreen(
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (visibleZones.isEmpty()) {
-                Text("No sample data is available for your selected zones yet.")
+                Text(
+                    stringResource(R.string.home_no_zone_data),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             } else {
                 visibleZones.forEach {
                     ZoneCard(it.name, it.detail, it.status)

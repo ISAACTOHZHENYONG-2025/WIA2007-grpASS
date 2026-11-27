@@ -18,6 +18,7 @@
     <string name="home_route_body">Pilih bangunan yang ingin anda tuju. Kami menyemak setiap laluan berdasarkan laporan terkini.</string>
     <string name="home_choose_building">Pilih bangunan</string>
     <string name="home_your_zones">Zon anda</string>
+    <string name="home_no_zone_data">Belum ada laporan untuk zon yang anda ikuti.</string>
     <string name="home_colour_legend">Apakah maksud warna?</string>
 
     <plurals name="banner_flooded_title">
@@ -46,5 +47,47 @@
     <string name="map_load_failed_body">Semak sambungan anda. Warna zon masih dipaparkan pada skrin Utama.</string>
 
     <!-- Route check -->
-    <string name="route_check_placeholder">Pilihan bangunan dan keputusan laluan akan dibina pada minggu ke-4.</string>
+
+    <!-- Semakan laluan (FR2.3). Draf: Isaac dan Chen Xi meluluskan teks akhir. -->
+    <string name="language_code">ms</string>
+    <string name="route_search">Cari bangunan</string>
+    <string name="route_from_location">Dari lokasi anda, berhampiran %s</string>
+    <string name="route_from_building">Dari %s</string>
+    <string name="route_change_start">Tukar</string>
+    <string name="route_finding_location">Mencari lokasi anda…</string>
+    <string name="route_location_off">Lokasi dimatikan atau anda berada di luar kampus. Pilih tempat anda bermula.</string>
+    <string name="route_pick_start_title">Dari mana anda bermula?</string>
+    <string name="route_choose_start">Pilih tempat mula</string>
+    <string name="route_buildings">Bangunan</string>
+    <string name="route_usual_walk">Jalan biasa %d min</string>
+    <string name="route_only_checked">Hanya bangunan yang mempunyai laluan yang telah disemak dari tempat mula anda disenaraikan.</string>
+    <string name="route_no_paths_from">Belum ada laluan yang disemak bermula dari %s. Pilih tempat mula yang lain.</string>
+    <string name="route_no_results">Tiada bangunan sepadan dengan \"%s\".</string>
+    <string name="route_no_path">Belum ada laluan yang disemak menghubungkan dua bangunan ini.</string>
+    <string name="verdict_go_title">Pergi.</string>
+    <string name="verdict_go_body">Tiada masalah dilaporkan di laluan biasa anda ke %1$s. Kira-kira %2$d min berjalan kaki.</string>
+    <string name="verdict_care_title">Pergi, berhati-hati.</string>
+    <string name="verdict_care_body">Amaran dilaporkan di %1$s di sepanjang laluan biasa anda. Kira-kira %2$d min berjalan kaki.</string>
+    <string name="verdict_leave_early">Hujan lebat diramalkan di kawasan rendah di sepanjang laluan anda. Bertolak 10 minit lebih awal.</string>
+    <string name="verdict_safer_title">Guna laluan lebih selamat</string>
+    <string name="verdict_safer_body">Laluan biasa anda melalui %s, yang dilanda banjir. Gunakan laluan yang ditandakan.</string>
+    <string name="verdict_safer_minutes">+%1$d min · %2$d min berjalan kaki</string>
+    <string name="verdict_none_title">Tiada laluan selamat dilaporkan</string>
+    <string name="verdict_none_body">Setiap laluan ke bangunan ini melalui zon banjir. Tunggu, atau semak notis rasmi.</string>
+    <string name="verdict_cause_category">%1$s disahkan di %2$s</string>
+    <string name="verdict_cause_flooded">Banjir dilaporkan di %s</string>
+    <string name="verdict_based_on">Berdasarkan laporan semasa, dikemas kini %s</string>
+    <string name="category_flood">Banjir</string>
+    <string name="category_fallen_tree">Pokok tumbang</string>
+    <string name="category_blocked_drain">Longkang tersumbat</string>
+    <string name="route_show_on_map">Tunjuk di peta</string>
+    <string name="route_check_another">Semak yang lain</string>
+    <string name="route_disclaimer">Semakan laluan menggunakan laporan pelajar dan notis kakitangan UM. Sentiasa ikut arahan rasmi pada hari tersebut.</string>
+    <string name="map_route_to">Laluan ke %s</string>
+    <string name="map_route_clear">Kosongkan laluan</string>
+    <!-- %1$s = what was reported, %2$d = people, %3$s = zone name -->
+    <plurals name="verdict_cause_report">
+        <item quantity="one">%1$s disahkan oleh %2$d orang di %3$s</item>
+        <item quantity="other">%1$s disahkan oleh %2$d orang di %3$s</item>
+    </plurals>
 </resources>

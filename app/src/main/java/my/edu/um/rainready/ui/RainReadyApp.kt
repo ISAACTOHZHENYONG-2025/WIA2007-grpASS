@@ -14,8 +14,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -25,10 +28,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import my.edu.um.rainready.R
+import my.edu.um.rainready.data.CampusData
 import my.edu.um.rainready.data.HomeRepository
 import my.edu.um.rainready.data.MapRepository
-import my.edu.um.rainready.data.SampleHomeRepository
-import my.edu.um.rainready.data.SampleMapRepository
+import my.edu.um.rainready.data.RouteChecker
+import my.edu.um.rainready.data.SampleRouteChecker
+import my.edu.um.rainready.data.ZoneRulesRepository
 
 /** The four bottom-bar tabs from the Figma nav bar. */
 enum class Tab(val route: String, @param:StringRes val label: Int, @param:DrawableRes val icon: Int) {
@@ -50,9 +55,21 @@ object Routes {
  */
 @Composable
 fun RainReadyApp(
-    homeRepository: HomeRepository = remember { SampleHomeRepository() },
-    mapRepository: MapRepository = remember { SampleMapRepository() },
+    homeRepository: HomeRepository? = null,
+    mapRepository: MapRepository? = null,
+    routeChecker: RouteChecker? = null,
 ) {
+    val context = LocalContext.current
+    val campus = remember { CampusData.load(context) }
+    // One zone feed for Home, the map and the route check: Jingying's zone colour rules run over
+    // the sample inputs until the live reports and weather are connected.
+    val zones = remember { ZoneRulesRepository.sample(campus) }
+    val home = homeRepository ?: zones
+    val map = mapRepository ?: zones
+    // The stand-in route checker follows the same map data, until Jingying's engine is connected.
+    val checker = routeChecker ?: remember(map) { SampleRouteChecker(campus, map.map) }
+    // A route from "Show on map", highlighted on the Map tab until the user clears it.
+    var mapRoute by remember { mutableStateOf<MapRoute?>(null) }
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
     val destination = backStack?.destination
@@ -97,12 +114,12 @@ fun RainReadyApp(
             modifier = Modifier.padding(innerPadding),
         ) {
             composable(Tab.HOME.route) {
-                val state by homeRepository.home.collectAsState(initial = null)
+                val state by home.home.collectAsState(initial = null)
                 state?.let { HomeScreen(it, onChooseBuilding = { nav.navigate(Routes.ROUTE_CHECK) }) }
             }
             composable(Tab.MAP.route) {
-                val state by mapRepository.map.collectAsState(initial = null)
-                MapScreen(state)
+                val state by map.map.collectAsState(initial = null)
+                MapScreen(state, route = mapRoute, onClearRoute = { mapRoute = null })
             }
             composable(Tab.NOTICES.route) { NoticesScreen() }
             composable(Tab.SETTINGS.route) {
@@ -114,7 +131,22 @@ fun RainReadyApp(
             composable(Routes.SIGN_IN) {
                 SignInScreen(onBack = { nav.popBackStack() })
             }
-            composable(Routes.ROUTE_CHECK) { RouteCheckScreen(onBack = { nav.popBackStack() }) }
+            composable(Routes.ROUTE_CHECK) {
+                val state by map.map.collectAsState(initial = null)
+                RouteCheckScreen(
+                    checker = checker,
+                    mapState = state,
+                    onBack = { nav.popBackStack() },
+                    onShowOnMap = { route ->
+                        mapRoute = route
+                        nav.navigate(Tab.MAP.route) {
+                            popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                )
+            }
         }
     }
 }
