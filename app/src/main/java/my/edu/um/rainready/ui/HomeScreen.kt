@@ -1,6 +1,5 @@
 package my.edu.um.rainready.ui
 
-import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -38,7 +37,6 @@ import my.edu.um.rainready.ui.components.ZoneCard
 import my.edu.um.rainready.ui.components.ZoneSymbol
 import my.edu.um.rainready.ui.components.style
 import my.edu.um.rainready.ui.theme.RainReadyTheme
-import java.util.Date
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 
@@ -72,7 +70,11 @@ fun HomeScreen(
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.semantics { heading() },
             )
-            Text(state.weatherLine, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                state.weatherLine.ifBlank { rainLine(state.rainNextHourMm) },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
 
         RouteCheckCard(onChooseBuilding)
@@ -133,7 +135,11 @@ fun HomeScreen(
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (visibleZones.isEmpty()) {
-                Text("No sample data is available for your selected zones yet.")
+                Text(
+                    stringResource(R.string.home_no_zone_data),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             } else {
                 visibleZones.forEach {
                     ZoneCard(it.name, it.detail, it.status)
@@ -186,13 +192,21 @@ private fun RouteCheckCard(onChooseBuilding: () -> Unit) {
     }
 }
 
+/** Home's weather line from the live forecast: the rain expected in the next hour on campus. */
+@Composable
+private fun rainLine(mm: Double?): String = when {
+    mm == null -> stringResource(R.string.weather_unknown)
+    mm < 0.1 -> stringResource(R.string.weather_dry_next_hour)
+    else -> stringResource(R.string.weather_rain_next_hour, mm)
+}
+
 /**
  * Summary banner: worst status across the zones, with the "last updated" time (FR2.1).
  * Grey "Can't get new reports" instead when [stale].
  */
 @Composable
 private fun StatusBanner(state: HomeState, stale: Boolean) {
-    val time = DateFormat.getTimeFormat(LocalContext.current).format(Date(state.updatedAtMillis))
+    val time = timeText(state.updatedAtMillis)
     val flooded = state.zones.filter { it.status == ZoneStatus.FLOODED }
     val caution = state.zones.filter { it.status == ZoneStatus.CAUTION }
     val worst = state.zones.worstStatus()

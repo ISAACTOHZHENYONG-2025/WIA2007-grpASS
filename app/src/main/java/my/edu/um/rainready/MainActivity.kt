@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
@@ -17,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import my.edu.um.rainready.data.FirestoreSetup
 import my.edu.um.rainready.ui.RainReadyApp
 import my.edu.um.rainready.ui.theme.RainReadyTheme
 import org.maplibre.android.MapLibre
@@ -28,6 +30,8 @@ class MainActivity : ComponentActivity() {
 
         // Must run before any MapView is created.
         MapLibre.getInstance(applicationContext)
+        // Test builds made with -Prainready.firestoreEmulator=127.0.0.1 read a local Firestore emulator.
+        FirestoreSetup.useEmulatorIfAsked()
 
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(
@@ -85,7 +89,10 @@ class MainActivity : ComponentActivity() {
 
             CompositionLocalProvider(
                 LocalContext provides localizedContext,
-                LocalConfiguration provides localizedConfiguration
+                LocalConfiguration provides localizedConfiguration,
+                // The translated context is not the activity, so screens that ask for a permission
+                // (location for the route check, camera for reports) need the activity named here.
+                LocalActivityResultRegistryOwner provides this@MainActivity,
             ) {
                 RainReadyTheme {
                     RainReadyApp()

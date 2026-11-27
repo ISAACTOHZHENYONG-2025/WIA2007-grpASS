@@ -45,10 +45,12 @@ fun millisUntilStale(updatedAtMillis: Long, nowMillis: Long): Long =
 
 /** Everything the Home screen needs. */
 data class HomeState(
-    /** One line about the rain, e.g. "Heavy rain now, until about 11 AM". */
+    /** One line about the rain, e.g. "Heavy rain now, until about 11 AM". Blank: Home words it from [rainNextHourMm]. */
     val weatherLine: String,
     /** The zones the user follows, or every zone if they follow none (FR1.2). */
     val zones: List<ZoneSummary>,
-    /** When the zone data was last refreshed, in epoch milliseconds. */
+    /** When the zone data was last refreshed, in epoch milliseconds (0 = not yet). */
     val updatedAtMillis: Long,
+    /** Rain forecast for the next hour in mm (live data), or null when it is not available. */
+    val rainNextHourMm: Double? = null,
 )

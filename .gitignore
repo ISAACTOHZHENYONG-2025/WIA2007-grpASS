@@ -33,6 +33,7 @@ firebase-debug.log
 firebase-debug.*.log
 .firebase/
 ui-debug.log
+firestore-debug.log
 emulator-data/
 
 # Survey raw answers and personal data

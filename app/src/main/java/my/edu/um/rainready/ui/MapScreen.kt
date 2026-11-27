@@ -18,6 +18,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -42,6 +43,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import my.edu.um.rainready.R
+import my.edu.um.rainready.model.LonLat
 import my.edu.um.rainready.model.MapState
 import my.edu.um.rainready.model.ZoneStatus
 import my.edu.um.rainready.ui.components.ZoneSymbol
@@ -56,10 +58,18 @@ import java.util.Date
  * grey and red report pins, "Updated" time, a grey banner when data is over 15 minutes old,
  * a colour legend and the OpenStreetMap credit.
  *
+ * @param route a route-check path to highlight ("Show on map"), or null.
+ * @param onClearRoute called when the user clears the highlighted route.
  * @param clock the time now, in epoch milliseconds. Tests pass a fake clock.
  */
 @Composable
-fun MapScreen(state: MapState?, modifier: Modifier = Modifier, clock: () -> Long = System::currentTimeMillis) {
+fun MapScreen(
+    state: MapState?,
+    modifier: Modifier = Modifier,
+    route: MapRoute? = null,
+    onClearRoute: () -> Unit = {},
+    clock: () -> Long = System::currentTimeMillis,
+) {
     val context = LocalContext.current
     val stale = rememberIsStale(state?.updatedAtMillis, clock)
     val map = remember {
@@ -71,6 +81,7 @@ fun MapScreen(state: MapState?, modifier: Modifier = Modifier, clock: () -> Long
     MapLifecycle(map)
     LaunchedEffect(map) { map.onLoadFailed = { loadError = it } }
     LaunchedEffect(state) { state?.let(map::render) }
+    LaunchedEffect(route) { map.showRoute(route?.main, route?.others.orEmpty()) }
 
     Box(modifier.fillMaxSize()) {
         AndroidView(factory = { map.view }, modifier = Modifier.fillMaxSize())
@@ -82,6 +93,7 @@ fun MapScreen(state: MapState?, modifier: Modifier = Modifier, clock: () -> Long
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             MapHeader(state, showLegend, onToggleLegend = { showLegend = !showLegend })
+            route?.let { RouteChip(it.title, onClearRoute) }
             if (state != null && stale) {
                 InfoBanner(
                     stringResource(R.string.banner_offline_title),
@@ -110,9 +122,28 @@ fun MapScreen(state: MapState?, modifier: Modifier = Modifier, clock: () -> Long
     }
 }
 
+/** A route-check path for the Map tab to highlight, from "Show on map". */
+data class MapRoute(
+    /** For example "Route to Main Library". */
+    val title: String,
+    val main: List<LonLat>?,
+    val others: List<List<LonLat>>,
+)
+
+/** "Route to Main Library" with a button to clear it, under the map header. */
+@Composable
+private fun RouteChip(title: String, onClear: () -> Unit) {
+    Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(24.dp), shadowElevation = 2.dp) {
+        Row(Modifier.padding(start = 16.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(title, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.weight(1f, fill = false))
+            TextButton(onClick = onClear) { Text(stringResource(R.string.map_route_clear)) }
+        }
+    }
+}
+
 /** Forwards the screen's lifecycle to the MapView, and cleans it up when the screen leaves. */
 @Composable
-private fun MapLifecycle(map: CampusMapView) {
+internal fun MapLifecycle(map: CampusMapView) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle, map) {
         var destroyed = false
@@ -140,8 +171,10 @@ private fun MapLifecycle(map: CampusMapView) {
     }
 }
 
+/** The time of day for [millis], or a dash when the live data has never come through (0). */
 @Composable
-private fun timeText(millis: Long): String = DateFormat.getTimeFormat(LocalContext.current).format(Date(millis))
+internal fun timeText(millis: Long): String =
+    if (millis <= 0L) "—" else DateFormat.getTimeFormat(LocalContext.current).format(Date(millis))
 
 @Composable
 private fun MapHeader(state: MapState?, showLegend: Boolean, onToggleLegend: () -> Unit) {

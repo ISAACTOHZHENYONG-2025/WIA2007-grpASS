@@ -1,0 +1,320 @@
+{
+ "_about": "Campus buildings from Jingying_buildings-paths_2026-11-09 (buildings tab), 24 Nov 2026. Positions are still to be checked on the path walk (KK13 especially).",
+ "buildings": [
+  {
+   "buildingId": "FSKTM",
+   "name": "Faculty of Computer Science and IT (FSKTM)",
+   "nameMs": "Fakulti Sains Komputer & Teknologi Maklumat",
+   "zoneId": "Z1",
+   "latitude": 3.12821,
+   "longitude": 101.65069,
+   "type": "faculty"
+  },
+  {
+   "buildingId": "KK8",
+   "name": "Kinabalu Residential College (KK8)",
+   "nameMs": "Kolej Kediaman Kinabalu (KK8)",
+   "zoneId": "Z1",
+   "latitude": 3.12992,
+   "longitude": 101.64935,
+   "type": "college"
+  },
+  {
+   "buildingId": "KK10",
+   "name": "Tun Ahmad Zaidi Residential College (KK10)",
+   "nameMs": "Kolej Kediaman Tun Ahmad Zaidi (KK10)",
+   "zoneId": "Z1",
+   "latitude": 3.13064,
+   "longitude": 101.65048,
+   "type": "college"
+  },
+  {
+   "buildingId": "KK3",
+   "name": "Tuanku Kurshiah Residential College (KK3)",
+   "nameMs": "Kolej Kediaman Tuanku Kurshiah (KK3)",
+   "zoneId": "Z2",
+   "latitude": 3.12382,
+   "longitude": 101.6501,
+   "type": "college"
+  },
+  {
+   "buildingId": "KK4",
+   "name": "Bestari Residential College (KK4)",
+   "nameMs": "Kolej Kediaman Bestari (KK4)",
+   "zoneId": "Z2",
+   "latitude": 3.12485,
+   "longitude": 101.64945,
+   "type": "college"
+  },
+  {
+   "buildingId": "KK7",
+   "name": "Za'ba Residential College (KK7)",
+   "nameMs": "Kolej Kediaman Za'ba (KK7)",
+   "zoneId": "Z2",
+   "latitude": 3.1263,
+   "longitude": 101.65042,
+   "type": "college"
+  },
+  {
+   "buildingId": "APM",
+   "name": "Academy of Malay Studies (APM)",
+   "nameMs": "Akademi Pengajian Melayu",
+   "zoneId": "Z5",
+   "latitude": 3.12455,
+   "longitude": 101.65245,
+   "type": "faculty"
+  },
+  {
+   "buildingId": "FBL",
+   "name": "Faculty of Languages and Linguistics",
+   "nameMs": "Fakulti Bahasa & Linguistik",
+   "zoneId": "Z2",
+   "latitude": 3.12253,
+   "longitude": 101.65143,
+   "type": "faculty"
+  },
+  {
+   "buildingId": "KK9",
+   "name": "Tun Syed Zahiruddin Residential College (KK9)",
+   "nameMs": "Kolej Kediaman Tun Syed Zahiruddin (KK9)",
+   "zoneId": "Z3",
+   "latitude": 3.12091,
+   "longitude": 101.64573,
+   "type": "college"
+  },
+  {
+   "buildingId": "KK13",
+   "name": "13th Residential College (KK13)",
+   "nameMs": "Kolej Kediaman Ke-13",
+   "zoneId": "Z3",
+   "latitude": 3.119,
+   "longitude": 101.63868,
+   "type": "college"
+  },
+  {
+   "buildingId": "FASS",
+   "name": "Faculty of Arts and Social Sciences",
+   "nameMs": "Fakulti Sastera dan Sains Sosial",
+   "zoneId": "Z4",
+   "latitude": 3.12096,
+   "longitude": 101.65309,
+   "type": "faculty"
+  },
+  {
+   "buildingId": "FEDU",
+   "name": "Faculty of Education",
+   "nameMs": "Fakulti Pendidikan",
+   "zoneId": "Z4",
+   "latitude": 3.12014,
+   "longitude": 101.65239,
+   "type": "faculty"
+  },
+  {
+   "buildingId": "FBE",
+   "name": "Faculty of Business and Economics",
+   "nameMs": "Fakulti Perniagaan & Ekonomi",
+   "zoneId": "Z4",
+   "latitude": 3.11858,
+   "longitude": 101.65271,
+   "type": "faculty"
+  },
+  {
+   "buildingId": "ZABALIB",
+   "name": "Za'ba Memorial Library",
+   "nameMs": "Perpustakaan Peringatan Za'ba",
+   "zoneId": "Z4",
+   "latitude": 3.11868,
+   "longitude": 101.65357,
+   "type": "library"
+  },
+  {
+   "buildingId": "FSCI",
+   "name": "Faculty of Science",
+   "nameMs": "Fakulti Sains",
+   "zoneId": "Z5",
+   "latitude": 3.1219,
+   "longitude": 101.65391,
+   "type": "faculty"
+  },
+  {
+   "buildingId": "MAINLIB",
+   "name": "Main Library",
+   "nameMs": "Perpustakaan Utama",
+   "zoneId": "Z6",
+   "latitude": 3.1203,
+   "longitude": 101.65434,
+   "type": "library"
+  },
+  {
+   "buildingId": "KPS",
+   "name": "Kompleks Perdanasiswa",
+   "nameMs": "Kompleks Perdanasiswa",
+   "zoneId": "Z6",
+   "latitude": 3.12135,
+   "longitude": 101.65492,
+   "type": "student centre"
+  },
+  {
+   "buildingId": "DTC",
+   "name": "Dewan Tunku Canselor (DTC)",
+   "nameMs": "Dewan Tunku Canselor",
+   "zoneId": "Z6",
+   "latitude": 3.12147,
+   "longitude": 101.65661,
+   "type": "hall"
+  },
+  {
+   "buildingId": "FCA",
+   "name": "Faculty of Creative Arts",
+   "nameMs": "Fakulti Seni Kreatif",
+   "zoneId": "Z6",
+   "latitude": 3.12107,
+   "longitude": 101.65699,
+   "type": "faculty"
+  },
+  {
+   "buildingId": "CHANC",
+   "name": "Chancellery Building",
+   "nameMs": "Bangunan Canselori",
+   "zoneId": "Z6",
+   "latitude": 3.12044,
+   "longitude": 101.65767,
+   "type": "admin"
+  },
+  {
+   "buildingId": "FENG",
+   "name": "Faculty of Engineering",
+   "nameMs": "Fakulti Kejuruteraan",
+   "zoneId": "Z7",
+   "latitude": 3.11785,
+   "longitude": 101.65534,
+   "type": "faculty"
+  },
+  {
+   "buildingId": "FBEN",
+   "name": "Faculty of Built Environment",
+   "nameMs": "Fakulti Alam Bina",
+   "zoneId": "Z7",
+   "latitude": 3.11586,
+   "longitude": 101.6553,
+   "type": "faculty"
+  },
+  {
+   "buildingId": "KK6",
+   "name": "Ibnu Sina Residential College (KK6)",
+   "nameMs": "Kolej Kediaman Ibnu Sina (KK6)",
+   "zoneId": "Z7",
+   "latitude": 3.11516,
+   "longitude": 101.6553,
+   "type": "college"
+  },
+  {
+   "buildingId": "KK2",
+   "name": "Tuanku Bahiyah Residential College (KK2)",
+   "nameMs": "Kolej Kediaman Tuanku Bahiyah (KK2)",
+   "zoneId": "Z7",
+   "latitude": 3.11763,
+   "longitude": 101.65719,
+   "type": "college"
+  },
+  {
+   "buildingId": "KK1",
+   "name": "First Residential College (KK1)",
+   "nameMs": "Kolej Kediaman Pertama (KK1)",
+   "zoneId": "Z8",
+   "latitude": 3.11737,
+   "longitude": 101.65935,
+   "type": "college"
+  },
+  {
+   "buildingId": "EXAM",
+   "name": "Examination Hall",
+   "nameMs": "Bangunan Peperiksaan",
+   "zoneId": "Z8",
+   "latitude": 3.11519,
+   "longitude": 101.6588,
+   "type": "hall"
+  },
+  {
+   "buildingId": "FLAW",
+   "name": "Faculty of Law",
+   "nameMs": "Fakulti Undang-Undang",
+   "zoneId": "Z8",
+   "latitude": 3.1177,
+   "longitude": 101.66095,
+   "type": "faculty"
+  },
+  {
+   "buildingId": "KLGATE",
+   "name": "UM KL Gate",
+   "nameMs": "Pintu KL UM",
+   "zoneId": "Z8",
+   "latitude": 3.11879,
+   "longitude": 101.66292,
+   "type": "gate"
+  },
+  {
+   "buildingId": "LRT",
+   "name": "LRT Universiti station",
+   "nameMs": "Stesen LRT Universiti",
+   "zoneId": "Z8",
+   "latitude": 3.11469,
+   "longitude": 101.66169,
+   "type": "transport"
+  },
+  {
+   "buildingId": "PASUM",
+   "name": "Centre for Foundation Studies in Science (PASUM)",
+   "nameMs": "Pusat Asasi Sains",
+   "zoneId": "Z9",
+   "latitude": 3.12332,
+   "longitude": 101.65923,
+   "type": "faculty"
+  },
+  {
+   "buildingId": "KK12",
+   "name": "Raja Dr. Nazrin Shah Residential College (KK12)",
+   "nameMs": "Kolej Kediaman Raja Dr. Nazrin Shah (KK12)",
+   "zoneId": "Z9",
+   "latitude": 3.12568,
+   "longitude": 101.66084,
+   "type": "college"
+  },
+  {
+   "buildingId": "KK5",
+   "name": "Dayasari Residential College (KK5)",
+   "nameMs": "Kolej Kediaman Dayasari (KK5)",
+   "zoneId": "Z10",
+   "latitude": 3.12752,
+   "longitude": 101.65851,
+   "type": "college"
+  },
+  {
+   "buildingId": "KK11",
+   "name": "Raja Ungku Aziz Residential College (KK11)",
+   "nameMs": "Kolej Kediaman Raja Ungku Aziz (KK11)",
+   "zoneId": "Z10",
+   "latitude": 3.12952,
+   "longitude": 101.66087,
+   "type": "college"
+  },
+  {
+   "buildingId": "SPORTS",
+   "name": "UM Sports Centre",
+   "nameMs": "Pusat Sukan UM",
+   "zoneId": "Z10",
+   "latitude": 3.13007,
+   "longitude": 101.65993,
+   "type": "sports"
+  },
+  {
+   "buildingId": "API",
+   "name": "Academy of Islamic Studies (API)",
+   "nameMs": "Akademi Pengajian Islam",
+   "zoneId": "Z10",
+   "latitude": 3.13289,
+   "longitude": 101.65741,
+   "type": "faculty"
+  }
+ ]
+}

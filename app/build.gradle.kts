@@ -18,6 +18,16 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Demo builds: ./gradlew assembleDebug -Prainready.sampleData=true shows the sample zones
+        // (one route-check trip per verdict) instead of the live Firestore data.
+        val sampleData = providers.gradleProperty("rainready.sampleData").orNull == "true"
+        buildConfigField("boolean", "SAMPLE_DATA", sampleData.toString())
+        // Testing: -Prainready.firestoreEmulator=127.0.0.1 (after adb reverse tcp:8080 tcp:8080) reads the local emulator
+        // (firebase emulators:start --only firestore) instead of the real project. Debug builds only.
+        val emulatorHost = providers.gradleProperty("rainready.firestoreEmulator").orNull.orEmpty()
+            .filter { it.isLetterOrDigit() || it == '.' || it == '-' }
+        buildConfigField("String", "FIRESTORE_EMULATOR", "\"$emulatorHost\"")
     }
 
     buildTypes {
@@ -26,6 +36,8 @@ android {
                 enable = true
                 packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
             }
+            // A release build always reads the real Firestore project.
+            buildConfigField("String", "FIRESTORE_EMULATOR", "\"\"")
         }
     }
     compileOptions {
@@ -34,6 +46,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
