@@ -74,6 +74,7 @@
     <string name="verdict_safer_minutes">+%1$d min · %2$d min berjalan kaki</string>
     <string name="verdict_none_title">Tiada laluan selamat dilaporkan</string>
     <string name="verdict_none_body">Setiap laluan ke bangunan ini melalui zon banjir. Tunggu, atau semak notis rasmi.</string>
+    <string name="verdict_cause_category">%1$s disahkan di %2$s</string>
     <string name="verdict_cause_flooded">Banjir dilaporkan di %s</string>
     <string name="verdict_based_on">Berdasarkan laporan semasa, dikemas kini %s</string>
     <string name="category_flood">Banjir</string>

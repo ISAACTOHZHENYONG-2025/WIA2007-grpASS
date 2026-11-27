@@ -10,6 +10,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.flow.flowOf
 import my.edu.um.rainready.data.CampusData
 import my.edu.um.rainready.data.SampleMapRepository
 import my.edu.um.rainready.data.SampleRouteChecker
@@ -39,7 +40,7 @@ class RouteCheckScreenTest {
     fun showRouteCheck() {
         rule.runOnUiThread { MapLibre.getInstance(rule.activity.applicationContext) }
         val map = SampleMapRepository.rainyDay()
-        val checker = SampleRouteChecker(CampusData.load(rule.activity), map, SampleMapRepository.causes)
+        val checker = SampleRouteChecker(CampusData.load(rule.activity), flowOf(map))
         rule.setContent {
             RainReadyTheme {
                 RouteCheckScreen(

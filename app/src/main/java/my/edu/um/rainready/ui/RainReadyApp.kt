@@ -32,9 +32,8 @@ import my.edu.um.rainready.data.CampusData
 import my.edu.um.rainready.data.HomeRepository
 import my.edu.um.rainready.data.MapRepository
 import my.edu.um.rainready.data.RouteChecker
-import my.edu.um.rainready.data.SampleHomeRepository
-import my.edu.um.rainready.data.SampleMapRepository
 import my.edu.um.rainready.data.SampleRouteChecker
+import my.edu.um.rainready.data.ZoneRulesRepository
 
 /** The four bottom-bar tabs from the Figma nav bar. */
 enum class Tab(val route: String, @param:StringRes val label: Int, @param:DrawableRes val icon: Int) {
@@ -56,15 +55,19 @@ object Routes {
  */
 @Composable
 fun RainReadyApp(
-    homeRepository: HomeRepository = remember { SampleHomeRepository() },
-    mapRepository: MapRepository = remember { SampleMapRepository() },
+    homeRepository: HomeRepository? = null,
+    mapRepository: MapRepository? = null,
     routeChecker: RouteChecker? = null,
 ) {
     val context = LocalContext.current
-    // The stand-in route checker uses the same sample data as the map, until Jingying's engine is connected.
-    val checker = routeChecker ?: remember {
-        SampleRouteChecker(CampusData.load(context), SampleMapRepository.rainyDay(), SampleMapRepository.causes)
-    }
+    val campus = remember { CampusData.load(context) }
+    // One zone feed for Home, the map and the route check: Jingying's zone colour rules run over
+    // the sample inputs until the live reports and weather are connected.
+    val zones = remember { ZoneRulesRepository.sample(campus) }
+    val home = homeRepository ?: zones
+    val map = mapRepository ?: zones
+    // The stand-in route checker follows the same map data, until Jingying's engine is connected.
+    val checker = routeChecker ?: remember(map) { SampleRouteChecker(campus, map.map) }
     // A route from "Show on map", highlighted on the Map tab until the user clears it.
     var mapRoute by remember { mutableStateOf<MapRoute?>(null) }
     val nav = rememberNavController()
@@ -111,11 +114,11 @@ fun RainReadyApp(
             modifier = Modifier.padding(innerPadding),
         ) {
             composable(Tab.HOME.route) {
-                val state by homeRepository.home.collectAsState(initial = null)
+                val state by home.home.collectAsState(initial = null)
                 state?.let { HomeScreen(it, onChooseBuilding = { nav.navigate(Routes.ROUTE_CHECK) }) }
             }
             composable(Tab.MAP.route) {
-                val state by mapRepository.map.collectAsState(initial = null)
+                val state by map.map.collectAsState(initial = null)
                 MapScreen(state, route = mapRoute, onClearRoute = { mapRoute = null })
             }
             composable(Tab.NOTICES.route) { NoticesScreen() }
@@ -129,7 +132,7 @@ fun RainReadyApp(
                 SignInScreen(onBack = { nav.popBackStack() })
             }
             composable(Routes.ROUTE_CHECK) {
-                val state by mapRepository.map.collectAsState(initial = null)
+                val state by map.map.collectAsState(initial = null)
                 RouteCheckScreen(
                     checker = checker,
                     mapState = state,

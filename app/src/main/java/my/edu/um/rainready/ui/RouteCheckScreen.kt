@@ -465,6 +465,8 @@ private fun VerdictCard(v: RouteVerdict, destinationName: String, zoneName: (Str
     val reason = when {
         v.causeCategory != null && confirmations != null && cause != null ->
             pluralStringResource(R.plurals.verdict_cause_report, confirmations, categoryText(v.causeCategory), confirmations, cause)
+        v.causeCategory != null && cause != null ->
+            stringResource(R.string.verdict_cause_category, categoryText(v.causeCategory), cause)
         cause != null && v.verdict == Verdict.NO_SAFE_ROUTE -> stringResource(R.string.verdict_cause_flooded, cause)
         else -> null
     }

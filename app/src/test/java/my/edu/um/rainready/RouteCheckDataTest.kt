@@ -1,5 +1,6 @@
 package my.edu.um.rainready
 
+import kotlinx.coroutines.flow.flowOf
 import my.edu.um.rainready.data.CampusData
 import my.edu.um.rainready.data.SampleMapRepository
 import my.edu.um.rainready.data.SampleRouteChecker
@@ -19,7 +20,8 @@ class RouteCheckDataTest {
         fun read(name: String) = File("src/main/assets/$name").readText()
         CampusData.parse(read("buildings.json"), read("paths.geojson"), read("zones.geojson"))
     }
-    private val checker by lazy { SampleRouteChecker(campus, SampleMapRepository.rainyDay(now = 0L), SampleMapRepository.causes) }
+    private val map = SampleMapRepository.rainyDay(now = 0L)
+    private val checker by lazy { SampleRouteChecker(campus, flowOf(map)) }
 
     @Test
     fun buildingsAndPathsMatchTheSheet() {
@@ -64,15 +66,15 @@ class RouteCheckDataTest {
 
     @Test
     fun allFourVerdictsAppearInTheSampleData() {
-        assertEquals(Verdict.GO, checker.verdictFor("KK8", "FSKTM")?.verdict)
-        assertEquals(Verdict.GO_TAKE_CARE, checker.verdictFor("LRT", "MAINLIB")?.verdict)
-        assertEquals(Verdict.USE_SAFER_ROUTE, checker.verdictFor("KK3", "FASS")?.verdict)
-        assertEquals(Verdict.NO_SAFE_ROUTE, checker.verdictFor("KK12", "FSCI")?.verdict)
+        assertEquals(Verdict.GO, checker.verdictFor(map, "KK8", "FSKTM")?.verdict)
+        assertEquals(Verdict.GO_TAKE_CARE, checker.verdictFor(map, "LRT", "MAINLIB")?.verdict)
+        assertEquals(Verdict.USE_SAFER_ROUTE, checker.verdictFor(map, "KK3", "FASS")?.verdict)
+        assertEquals(Verdict.NO_SAFE_ROUTE, checker.verdictFor(map, "KK12", "FSCI")?.verdict)
     }
 
     @Test
     fun saferRouteAvoidsTheFloodedZoneAndCountsTheExtraMinutes() {
-        val v = checker.verdictFor("KK3", "FASS")!!
+        val v = checker.verdictFor(map, "KK3", "FASS")!!
         assertEquals("P03", v.usualPath.id)
         assertEquals("P04", v.recommendedPath?.id)
         assertEquals(4, v.extraMinutes)
@@ -80,20 +82,20 @@ class RouteCheckDataTest {
         assertEquals("fallen tree", v.causeCategory)
         assertEquals(listOf("P03"), v.otherPaths.map { it.id })
         // The same trip walked the other way gives the same answer.
-        assertEquals("P04", checker.verdictFor("FASS", "KK3")?.recommendedPath?.id)
+        assertEquals("P04", checker.verdictFor(map, "FASS", "KK3")?.recommendedPath?.id)
     }
 
     @Test
     fun cautionOnLowGroundAddsLeaveEarly() {
-        val v = checker.verdictFor("LRT", "MAINLIB")!!
+        val v = checker.verdictFor(map, "LRT", "MAINLIB")!!
         assertTrue(v.leaveEarly)
         assertEquals("Z6", v.causeZoneId)
-        assertFalse(checker.verdictFor("KK8", "FSKTM")!!.leaveEarly)
+        assertFalse(checker.verdictFor(map, "KK8", "FSKTM")!!.leaveEarly)
     }
 
     @Test
     fun noSafeRouteHasNothingToRecommend() {
-        val v = checker.verdictFor("KK2", "FENG")!!
+        val v = checker.verdictFor(map, "KK2", "FENG")!!
         assertEquals(Verdict.NO_SAFE_ROUTE, v.verdict)
         assertNull(v.recommendedPath)
         assertEquals(setOf("P08", "P09"), v.otherPaths.map { it.id }.toSet())
@@ -101,6 +103,6 @@ class RouteCheckDataTest {
 
     @Test
     fun tripWithoutAPathHasNoVerdict() {
-        assertNull(checker.verdictFor("KK13", "FSKTM"))
+        assertNull(checker.verdictFor(map, "KK13", "FSKTM"))
     }
 }

@@ -73,6 +73,8 @@
     <string name="verdict_safer_minutes">+%1$d min · %2$d min walk</string>
     <string name="verdict_none_title">No safe route reported</string>
     <string name="verdict_none_body">Every path to this building crosses a flooded zone. Wait, or check official notices.</string>
+    <!-- %1$s = what was reported, %2$s = zone name (when the number of confirmations is not known) -->
+    <string name="verdict_cause_category">%1$s confirmed in %2$s</string>
     <string name="verdict_cause_flooded">Flooding reported in %s</string>
     <string name="verdict_based_on">Based on current reports, updated %s</string>
     <string name="category_flood">Flood</string>

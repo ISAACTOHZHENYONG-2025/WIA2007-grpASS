@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import my.edu.um.rainready.model.MapState
 import my.edu.um.rainready.model.ReportPin
+import my.edu.um.rainready.model.ZoneCause
 import my.edu.um.rainready.model.ZoneStatus
 
 /**
@@ -35,12 +36,13 @@ class SampleMapRepository : MapRepository {
                 ReportPin("r4", latitude = 3.12190, longitude = 101.65391, confirmed = true),   // Faculty of Science
             ),
             updatedAtMillis = now,
+            causes = mapOf(
+                "Z7" to ZoneCause("flood", confirmations = 3),
+                "Z5" to ZoneCause("fallen tree", confirmations = 3),
+            ),
         )
 
-        /** What the sample reports in the flooded zones are, for the route-check reason line. */
-        val causes = mapOf(
-            "Z7" to SampleCause("flood", confirmations = 3),
-            "Z5" to SampleCause("fallen tree", confirmations = 3),
-        )
+        /** The sample report pins, shared with [ZoneRulesRepository.sample]. */
+        val samplePins: List<ReportPin> get() = rainyDay(0L).reports
     }
 }

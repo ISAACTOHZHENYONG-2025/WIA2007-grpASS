@@ -1,7 +1,7 @@
 package my.edu.um.rainready.data
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import my.edu.um.rainready.model.CampusPath
 import my.edu.um.rainready.model.MapState
 import my.edu.um.rainready.model.RouteVerdict
@@ -22,29 +22,26 @@ interface RouteChecker {
     fun check(startId: String, destinationId: String): Flow<RouteVerdict?>
 }
 
-/** A report shown as the reason for a verdict, in sample data. */
-data class SampleCause(val category: String, val confirmations: Int)
-
 /**
- * A stand-in so the screens can be built and shown before the real engine is ready. It applies the
- * FR2.3 rules to sample zone colours that match the sample map (Engineering and Science flooded,
- * Main Library on caution). Treats caution on low ground as "heavy rain within the hour".
- * Replace it with Jingying's engine.
+ * A stand-in so the screens work before the real engine is ready. It applies the FR2.3 rules to the
+ * same zone colours the map shows, so a new verdict follows every map update. Treats caution on
+ * low ground as "heavy rain within the hour". Replace it with Jingying's engine.
  */
 class SampleRouteChecker(
     override val campus: CampusData,
-    private val map: MapState,
-    private val causes: Map<String, SampleCause> = emptyMap(),
+    private val map: Flow<MapState>,
 ) : RouteChecker {
 
     override fun check(startId: String, destinationId: String): Flow<RouteVerdict?> =
-        flowOf(verdictFor(startId, destinationId))
+        map.map { verdictFor(it, startId, destinationId) }
 
-    fun verdictFor(startId: String, destinationId: String): RouteVerdict? {
+    fun verdictFor(map: MapState, startId: String, destinationId: String): RouteVerdict? {
         val usual = campus.usualPath(startId, destinationId) ?: return null
         val others = campus.pathsBetween(startId, destinationId) - usual
-        val usualWorst = worst(usual)
-        val cause = worstZone(usual)
+        fun status(zoneId: String) = map.zoneStatus[zoneId] ?: ZoneStatus.CLEAR
+        fun worst(path: CampusPath) = path.zoneIds.maxOfOrNull { status(it) } ?: ZoneStatus.CLEAR
+        val cause = usual.zoneIds.filter { status(it) != ZoneStatus.CLEAR }.maxByOrNull { status(it) }
+
         fun verdict(v: Verdict, recommended: CampusPath?, grey: List<CampusPath>, extra: Int = 0, early: Boolean = false) =
             RouteVerdict(
                 verdict = v,
@@ -56,11 +53,12 @@ class SampleRouteChecker(
                 extraMinutes = extra,
                 leaveEarly = early,
                 causeZoneId = cause,
-                causeCategory = cause?.let { causes[it]?.category },
-                causeConfirmations = cause?.let { causes[it]?.confirmations },
+                causeCategory = cause?.let { map.causes[it]?.category },
+                causeConfirmations = cause?.let { map.causes[it]?.confirmations },
                 updatedAtMillis = map.updatedAtMillis,
             )
-        return when (usualWorst) {
+
+        return when (worst(usual)) {
             ZoneStatus.CLEAR -> verdict(Verdict.GO, usual, emptyList())
             ZoneStatus.CAUTION -> verdict(
                 Verdict.GO_TAKE_CARE, usual, emptyList(),
@@ -77,9 +75,4 @@ class SampleRouteChecker(
             }
         }
     }
-
-    private fun status(zoneId: String) = map.zoneStatus[zoneId] ?: ZoneStatus.CLEAR
-    private fun worst(path: CampusPath) = path.zoneIds.maxOfOrNull { status(it) } ?: ZoneStatus.CLEAR
-    private fun worstZone(path: CampusPath): String? =
-        path.zoneIds.filter { status(it) != ZoneStatus.CLEAR }.maxByOrNull { status(it) }
 }
